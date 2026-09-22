@@ -1,13 +1,13 @@
-{
-    "brand_name": "YourBrand",
-    "brand_domain": "yourbrand.com",
+ {
+    "brand_name": "Optimus Trades",
+    "brand_domain": "trading-bot-template-six.vercel.app",
     "brand_hostname": {
-        "staging": "staging.yourbrand.com/dashboard",
-        "production": "yourbrand.com/dashboard"
+        "staging": "staging-bot.yourbrand.com/dashboard",
+        "production": "trading-bot-template-six.vercel.app/dashboard"
     },
-    "domain_name": "YourBrand.com",
+    "domain_name": "OptimusTrades",
     "colors": {
-        "primary": "#3b82f6",
+        "primary": "#26d99a",
         "secondary": "#64748b",
         "tertiary": "#8b5cf6",
         "success": "#10b981",
@@ -58,14 +58,14 @@
         "css_variable_prefix": "--brand"
     },
     "platform": {
-        "name": "Trading Bot",
+        "name": "Optimus Trades Bot",
         "logo": {
             "type": "component",
             "component_name": "BrandLogo",
-            "alt_text": "Trading Bot",
+            "alt_text": "Optimus Trades",
             "link_url": "/",
             "show_text": false,
-            "text": "Trading Bot"
+            "text": "Optimus Trades"
         },
         "footer": {
             "enable_language_settings": false,
@@ -73,7 +73,7 @@
         },
         "hostname": {
             "production": {
-                "com": "bot.yourbrand.com"
+                "com": "trading-bot-template-six.vercel.app"
             },
             "staging": {
                 "com": "staging-bot.yourbrand.com"
