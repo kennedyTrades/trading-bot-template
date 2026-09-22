@@ -1,3 +1,6 @@
+ const dotenv = require('dotenv');
+dotenv.config();
+
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginSass } from '@rsbuild/plugin-sass';
@@ -10,10 +13,7 @@ export default defineConfig({
         pluginSass({
             sassLoaderOptions: {
                 sourceMap: true,
-                sassOptions: {
-                    // includePaths: [path.resolve(__dirname, 'src')],
-                },
-                // additionalData: `@use "${path.resolve(__dirname, 'src/components/shared/styles')}" as *;`,
+                sassOptions: {},
             },
             exclude: /node_modules/,
         }),
@@ -46,6 +46,9 @@ export default defineConfig({
         },
     },
     output: {
+        distPath: {
+            root: 'dist',
+        },
         copy: [
             {
                 from: 'node_modules/@deriv-com/smartcharts-champion/dist/*',
@@ -75,20 +78,6 @@ export default defineConfig({
     },
     dev: {
         hmr: true,
-    },
-    performance: {
-        // Configure Rsbuild's native bundle analyzer
-        bundleAnalyze:
-            process.env.BUNDLE_ANALYZE === 'true'
-                ? {
-                      analyzerMode: 'server',
-                      analyzerHost: 'localhost',
-                      analyzerPort: 8888,
-                      openAnalyzer: true,
-                      generateStatsFile: true,
-                      statsFilename: 'stats.json',
-                  }
-                : undefined,
     },
     tools: {
         rspack: {
