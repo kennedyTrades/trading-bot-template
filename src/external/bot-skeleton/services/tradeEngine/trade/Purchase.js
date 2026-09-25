@@ -1,4 +1,4 @@
-import { LogTypes } from '../../../constants/messages';
+ import { LogTypes } from '../../../constants/messages';
 import { api_base } from '../../api/api-base';
 import { contractStatus, info, log } from '../utils/broadcast';
 import { doUntilDone, getUUID, recoverFromError, tradeOptionToBuy } from '../utils/helpers';
@@ -10,12 +10,27 @@ let purchase_reference;
 
 export default Engine =>
     class Purchase extends Engine {
-        purchase(contract_type) {
+        async purchase(contract_type, options = {}) {
             // Prevent calling purchase twice
             if (this.store.getState().scope !== BEFORE_PURCHASE) {
                 return Promise.resolve();
             }
 
+            // 🎯 BULK TRADES: Determine how many contracts to fire
+            const bulkEnabled = options.bulk === 'ENABLED';
+            const numContracts = bulkEnabled ? Math.max(1, Number(options.count) || 1) : 1;
+
+            // 🚀 Fire all contracts SIMULTANEOUSLY
+            const purchasePromises = [];
+            for (let contractIndex = 0; contractIndex < numContracts; contractIndex++) {
+                purchasePromises.push(this._executeSinglePurchase(contract_type));
+            }
+
+            // Wait for all to complete
+            await Promise.allSettled(purchasePromises);
+        }
+
+        _executeSinglePurchase(contract_type) {
             const onSuccess = response => {
                 // Don't unnecessarily send a forget request for a purchased contract.
                 const { buy } = response;
@@ -63,7 +78,6 @@ export default Engine =>
                 return recoverFromError(
                     action,
                     (errorCode, makeDelay) => {
-                        // if disconnected no need to resubscription (handled by live-api)
                         if (errorCode !== 'DisconnectError') {
                             this.renewProposalsOnPurchase();
                         } else {
@@ -82,6 +96,7 @@ export default Engine =>
                     delayIndex++
                 ).then(onSuccess);
             }
+
             const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
             const action = () => api_base.api.send(trade_option);
 
@@ -114,6 +129,7 @@ export default Engine =>
                 delayIndex++
             ).then(onSuccess);
         }
+
         getPurchaseReference = () => purchase_reference;
         regeneratePurchaseReference = () => {
             purchase_reference = getUUID();
