@@ -11,12 +11,8 @@ let purchase_reference;
 export default Engine =>
     class Purchase extends Engine {
         async purchase(contract_type, options = {}) {
-            console.log('🔍 [PURCHASE] Called with:', { contract_type, options });
-            console.log('🔍 [PURCHASE] Current scope:', this.store.getState().scope);
-
             // Prevent calling purchase twice
             if (this.store.getState().scope !== BEFORE_PURCHASE) {
-                console.log('❌ [PURCHASE] Blocked by scope check. Scope is:', this.store.getState().scope);
                 return Promise.resolve();
             }
 
@@ -24,62 +20,53 @@ export default Engine =>
             const bulkEnabled = options.bulk === 'ENABLED';
             const numContracts = bulkEnabled ? Math.max(1, Number(options.count) || 1) : 1;
 
-            console.log('🎯 [PURCHASE] Bulk enabled:', bulkEnabled);
-            console.log('🎯 [PURCHASE] Firing', numContracts, 'contract(s)');
-
-            // 🚀 Fire all contracts SIMULTANEOUSLY
-            const purchasePromises = [];
-            for (let contractIndex = 0; contractIndex < numContracts; contractIndex++) {
-                console.log(`🚀 [PURCHASE] Starting contract #${contractIndex + 1}`);
-                purchasePromises.push(this._executeSinglePurchase(contract_type, contractIndex + 1));
+            // If bulk is disabled or count is 1, use the normal single-trade path
+            if (numContracts <= 1) {
+                return this._executeSinglePurchase(contract_type);
             }
 
-            // Wait for all to complete
-            const results = await Promise.allSettled(purchasePromises);
-            console.log('📊 [PURCHASE] All settled. Results:', results.map(r => r.status));
+            // 🚀 TRUE SIMULTANEOUS EXECUTION
+            // We build ALL trade requests synchronously, then fire them in
+            // the SAME event loop tick using Promise.all(). This gives Deriv
+            // all requests at the exact same instant, resulting in near-
+            // identical entry prices.
+
+            const tradePromises = [];
+
+            // Build all requests FIRST (synchronously) so they're ready to fire together
+            for (let i = 0; i < numContracts; i++) {
+                // Build the trade option synchronously
+                const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
+
+                // Push the promise WITHOUT awaiting it — this queues the send
+                tradePromises.push(
+                    api_base.api.send(trade_option)
+                );
+            }
+
+            // 🔥 FIRE ALL AT ONCE — Promise.allSettled awaits all simultaneously
+            const results = await Promise.allSettled(tradePromises);
+
+            // Process each successful result
+            let successCount = 0;
+            for (let i = 0; i < results.length; i++) {
+                const result = results[i];
+
+                if (result.status === 'fulfilled' && result.value && result.value.buy) {
+                    successCount++;
+                    this._handlePurchaseSuccess(result.value, contract_type);
+                } else if (result.status === 'rejected') {
+                    console.warn(`[PURCHASE] Trade #${i + 1} failed:`, result.reason);
+                }
+            }
+
+            return Promise.resolve();
         }
 
-        _executeSinglePurchase(contract_type, index = 1) {
-            console.log(`⚙️ [SINGLE #${index}] Firing trade`);
-
-            const onSuccess = response => {
-                const { buy } = response;
-                console.log(`✅ [SINGLE #${index}] Purchase successful! Transaction:`, buy.transaction_id);
-
-                contractStatus({
-                    id: 'contract.purchase_received',
-                    data: buy.transaction_id,
-                    buy,
-                });
-
-                this.contractId = buy.contract_id;
-                this.store.dispatch(purchaseSuccessful());
-
-                if (this.is_proposal_subscription_required) {
-                    this.renewProposalsOnPurchase();
-                }
-
-                delayIndex = 0;
-                log(LogTypes.PURCHASE, { transaction_id: buy.transaction_id });
-                info({
-                    accountID: this.accountInfo.loginid,
-                    totalRuns: this.updateAndReturnTotalRuns(),
-                    transaction_ids: { buy: buy.transaction_id },
-                    contract_type,
-                    buy_price: buy.buy_price,
-                });
-            };
-
-            const onError = error => {
-                console.log(`❌ [SINGLE #${index}] Purchase failed:`, error);
-                throw error;
-            };
-
+        _executeSinglePurchase(contract_type) {
+            // Standard single-trade path (used when bulk is disabled)
             if (this.is_proposal_subscription_required) {
-                console.log(`📋 [SINGLE #${index}] Using proposal subscription path`);
-
                 const { id, askPrice } = this.selectProposal(contract_type);
-                console.log(`📋 [SINGLE #${index}] Proposal ID:`, id, 'Ask price:', askPrice);
 
                 const action = () => api_base.api.send({ buy: id, price: askPrice });
 
@@ -91,7 +78,7 @@ export default Engine =>
                 });
 
                 if (!this.options.timeMachineEnabled) {
-                    return doUntilDone(action).then(onSuccess).catch(onError);
+                    return doUntilDone(action).then(response => this._handlePurchaseSuccess(response, contract_type));
                 }
 
                 return recoverFromError(
@@ -113,14 +100,10 @@ export default Engine =>
                     },
                     ['PriceMoved', 'InvalidContractProposal'],
                     delayIndex++
-                ).then(onSuccess).catch(onError);
+                ).then(response => this._handlePurchaseSuccess(response, contract_type));
             }
 
-            console.log(`💼 [SINGLE #${index}] Using direct trade path`);
-
             const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
-            console.log(`💼 [SINGLE #${index}] Trade option:`, trade_option);
-
             const action = () => api_base.api.send(trade_option);
 
             this.isSold = false;
@@ -131,7 +114,7 @@ export default Engine =>
             });
 
             if (!this.options.timeMachineEnabled) {
-                return doUntilDone(action).then(onSuccess).catch(onError);
+                return doUntilDone(action).then(response => this._handlePurchaseSuccess(response, contract_type));
             }
 
             return recoverFromError(
@@ -150,7 +133,40 @@ export default Engine =>
                 },
                 ['PriceMoved', 'InvalidContractProposal'],
                 delayIndex++
-            ).then(onSuccess).catch(onError);
+            ).then(response => this._handlePurchaseSuccess(response, contract_type));
+        }
+
+        _handlePurchaseSuccess(response, contract_type) {
+            // Extract the buy object from the response
+            const buy = response.buy || response;
+
+            if (!buy || !buy.contract_id) {
+                console.warn('[PURCHASE] Invalid response:', response);
+                return;
+            }
+
+            contractStatus({
+                id: 'contract.purchase_received',
+                data: buy.transaction_id,
+                buy,
+            });
+
+            this.contractId = buy.contract_id;
+            this.store.dispatch(purchaseSuccessful());
+
+            if (this.is_proposal_subscription_required) {
+                this.renewProposalsOnPurchase();
+            }
+
+            delayIndex = 0;
+            log(LogTypes.PURCHASE, { transaction_id: buy.transaction_id });
+            info({
+                accountID: this.accountInfo.loginid,
+                totalRuns: this.updateAndReturnTotalRuns(),
+                transaction_ids: { buy: buy.transaction_id },
+                contract_type,
+                buy_price: buy.buy_price,
+            });
         }
 
         getPurchaseReference = () => purchase_reference;
