@@ -11,8 +11,12 @@ let purchase_reference;
 export default Engine =>
     class Purchase extends Engine {
         async purchase(contract_type, options = {}) {
+            console.log('🔍 [PURCHASE] Called with:', { contract_type, options });
+            console.log('🔍 [PURCHASE] Current scope:', this.store.getState().scope);
+
             // Prevent calling purchase twice
             if (this.store.getState().scope !== BEFORE_PURCHASE) {
+                console.log('❌ [PURCHASE] Blocked by scope check. Scope is:', this.store.getState().scope);
                 return Promise.resolve();
             }
 
@@ -20,20 +24,27 @@ export default Engine =>
             const bulkEnabled = options.bulk === 'ENABLED';
             const numContracts = bulkEnabled ? Math.max(1, Number(options.count) || 1) : 1;
 
+            console.log('🎯 [PURCHASE] Bulk enabled:', bulkEnabled);
+            console.log('🎯 [PURCHASE] Firing', numContracts, 'contract(s)');
+
             // 🚀 Fire all contracts SIMULTANEOUSLY
             const purchasePromises = [];
             for (let contractIndex = 0; contractIndex < numContracts; contractIndex++) {
-                purchasePromises.push(this._executeSinglePurchase(contract_type));
+                console.log(`🚀 [PURCHASE] Starting contract #${contractIndex + 1}`);
+                purchasePromises.push(this._executeSinglePurchase(contract_type, contractIndex + 1));
             }
 
             // Wait for all to complete
-            await Promise.allSettled(purchasePromises);
+            const results = await Promise.allSettled(purchasePromises);
+            console.log('📊 [PURCHASE] All settled. Results:', results.map(r => r.status));
         }
 
-        _executeSinglePurchase(contract_type) {
+        _executeSinglePurchase(contract_type, index = 1) {
+            console.log(`⚙️ [SINGLE #${index}] Firing trade`);
+
             const onSuccess = response => {
-                // Don't unnecessarily send a forget request for a purchased contract.
                 const { buy } = response;
+                console.log(`✅ [SINGLE #${index}] Purchase successful! Transaction:`, buy.transaction_id);
 
                 contractStatus({
                     id: 'contract.purchase_received',
@@ -59,8 +70,16 @@ export default Engine =>
                 });
             };
 
+            const onError = error => {
+                console.log(`❌ [SINGLE #${index}] Purchase failed:`, error);
+                throw error;
+            };
+
             if (this.is_proposal_subscription_required) {
+                console.log(`📋 [SINGLE #${index}] Using proposal subscription path`);
+
                 const { id, askPrice } = this.selectProposal(contract_type);
+                console.log(`📋 [SINGLE #${index}] Proposal ID:`, id, 'Ask price:', askPrice);
 
                 const action = () => api_base.api.send({ buy: id, price: askPrice });
 
@@ -72,7 +91,7 @@ export default Engine =>
                 });
 
                 if (!this.options.timeMachineEnabled) {
-                    return doUntilDone(action).then(onSuccess);
+                    return doUntilDone(action).then(onSuccess).catch(onError);
                 }
 
                 return recoverFromError(
@@ -94,10 +113,14 @@ export default Engine =>
                     },
                     ['PriceMoved', 'InvalidContractProposal'],
                     delayIndex++
-                ).then(onSuccess);
+                ).then(onSuccess).catch(onError);
             }
 
+            console.log(`💼 [SINGLE #${index}] Using direct trade path`);
+
             const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
+            console.log(`💼 [SINGLE #${index}] Trade option:`, trade_option);
+
             const action = () => api_base.api.send(trade_option);
 
             this.isSold = false;
@@ -108,7 +131,7 @@ export default Engine =>
             });
 
             if (!this.options.timeMachineEnabled) {
-                return doUntilDone(action).then(onSuccess);
+                return doUntilDone(action).then(onSuccess).catch(onError);
             }
 
             return recoverFromError(
@@ -127,7 +150,7 @@ export default Engine =>
                 },
                 ['PriceMoved', 'InvalidContractProposal'],
                 delayIndex++
-            ).then(onSuccess);
+            ).then(onSuccess).catch(onError);
         }
 
         getPurchaseReference = () => purchase_reference;
