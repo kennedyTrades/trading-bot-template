@@ -1,4 +1,4 @@
-import { localize } from '@deriv-com/translations';
+ import { localize } from '@deriv-com/translations';
 import { getContractTypeOptions } from '../../../shared';
 import { excludeOptionFromContextMenu, modifyContextMenu } from '../../../utils';
 
@@ -17,6 +17,28 @@ window.Blockly.Blocks.purchase = {
                     type: 'field_dropdown',
                     name: 'PURCHASE_LIST',
                     options: [['', '']],
+                },
+            ],
+            message1: 'Bulk trades: %1',
+            args1: [
+                {
+                    type: 'field_dropdown',
+                    name: 'BULK_TRADES',
+                    options: [
+                        ['Disabled', 'DISABLED'],
+                        ['Enabled', 'ENABLED'],
+                    ],
+                },
+            ],
+            message2: 'Number of contracts: %1',
+            args2: [
+                {
+                    type: 'field_number',
+                    name: 'NUM_CONTRACTS',
+                    value: 1,
+                    min: 1,
+                    max: 100,
+                    precision: 1,
                 },
             ],
             previousStatement: null,
@@ -85,7 +107,9 @@ window.Blockly.Blocks.purchase = {
 
 window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
     const purchaseList = block.getFieldValue('PURCHASE_LIST');
+    const bulkTrades = block.getFieldValue('BULK_TRADES') || 'DISABLED';
+    const numContracts = block.getFieldValue('NUM_CONTRACTS') || 1;
 
-    const code = `Bot.purchase('${purchaseList}');\n`;
+    const code = `Bot.purchase('${purchaseList}', { bulk: '${bulkTrades}', count: ${numContracts} });\n`;
     return code;
 };
