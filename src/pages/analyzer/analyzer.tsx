@@ -68,6 +68,36 @@ const formatPrice = (price: number, symbol: string) => {
 };
 
 // ─────────────────────────────────────────────────────────
+//  BEEP SOUND (Web Audio API — no files needed)
+// ─────────────────────────────────────────────────────────
+const playBeep = (audioCtxRef: React.MutableRefObject<AudioContext | null>) => {
+    try {
+        if (!audioCtxRef.current) {
+            const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+            if (!AudioCtx) return;
+            audioCtxRef.current = new AudioCtx();
+        }
+        const ctx = audioCtxRef.current;
+        if (ctx.state === 'suspended') {
+            ctx.resume();
+        }
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(1200, ctx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.15, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.3);
+    } catch (e) {
+        console.warn('Beep failed:', e);
+    }
+};
+
+// ─────────────────────────────────────────────────────────
 //  COMPONENT
 // ─────────────────────────────────────────────────────────
 const Analyzer: React.FC = () => {
@@ -78,7 +108,11 @@ const Analyzer: React.FC = () => {
     const [showModal, setShowModal] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
-    // Refs (avoid re-renders)
+    // NEW: sound + theme state
+    const [soundEnabled, setSoundEnabled] = useState(true);
+    const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+    // Refs
     const wsRef = useRef<WebSocket | null>(null);
     const tickHistoryRef = useRef<Tick[]>([]);
     const pendingSignalRef = useRef<{ digit: number; firedAtIndex: number } | null>(null);
@@ -86,14 +120,15 @@ const Analyzer: React.FC = () => {
     const lastSignalRef = useRef<Signal | null>(null);
     const symbolRef = useRef(symbol);
     const socketGenerationRef = useRef(0);
+    const soundEnabledRef = useRef(soundEnabled);
+    const audioCtxRef = useRef<AudioContext | null>(null);
 
-    // Keep symbolRef in sync
-    useEffect(() => {
-        symbolRef.current = symbol;
-    }, [symbol]);
+    // Keep refs in sync
+    useEffect(() => { symbolRef.current = symbol; }, [symbol]);
+    useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
 
     // ─────────────────────────────────────────
-    //  3-STRATEGY ENGINE (ported from index.js)
+    //  3-STRATEGY ENGINE
     // ─────────────────────────────────────────
     const fireSignal = useCallback((opts: {
         strategy: string;
@@ -103,7 +138,6 @@ const Analyzer: React.FC = () => {
         percents: number[];
         reason: string;
     }) => {
-        const currentSymbol = symbolRef.current;
         const signal: Signal = {
             ok: true,
             strategy: opts.strategy,
@@ -123,6 +157,12 @@ const Analyzer: React.FC = () => {
                 digit: opts.predicted,
                 firedAtIndex: tickHistoryRef.current.length,
             };
+
+            // 🔔 BEEP on new signal
+            if (soundEnabledRef.current) {
+                playBeep(audioCtxRef);
+            }
+
             console.log(
                 `🔮 SIGNAL [${opts.confidence}] via "${opts.strategy}" | DIFFER ${opts.predicted}, Entry: ${opts.entries.join(' or ')}`
             );
@@ -214,7 +254,7 @@ const Analyzer: React.FC = () => {
     }, [fireSignal]);
 
     // ─────────────────────────────────────────
-    //  PROCESS LIVE TICK (ported from index.js)
+    //  PROCESS LIVE TICK
     // ─────────────────────────────────────────
     const processTick = useCallback((price: number, epoch: number) => {
         const currentSymbol = symbolRef.current;
@@ -248,20 +288,18 @@ const Analyzer: React.FC = () => {
 
         setTicks([...tickHistoryRef.current]);
 
-        // Evaluate strategies on every tick
         if (tickHistoryRef.current.length >= MIN_SAMPLES) {
             evaluateStrategies(digit);
         }
     }, [evaluateStrategies]);
 
     // ─────────────────────────────────────────
-    //  CONNECT TO DERIV (runs when symbol changes)
+    //  CONNECT TO DERIV
     // ─────────────────────────────────────────
     useEffect(() => {
         socketGenerationRef.current += 1;
         const myGeneration = socketGenerationRef.current;
 
-        // Reset state for new market
         tickHistoryRef.current = [];
         pendingSignalRef.current = null;
         lastSignalRef.current = null;
@@ -271,13 +309,11 @@ const Analyzer: React.FC = () => {
         setStats({ totalSignals: 0, wins: 0, losses: 0 });
         setConnectionStatus('connecting');
 
-        // Close old socket
         if (wsRef.current) {
             try { wsRef.current.close(); } catch (e) { /* ignore */ }
             wsRef.current = null;
         }
 
-        // Open new socket
         const ws = new WebSocket(WS_URL);
         wsRef.current = ws;
 
@@ -308,7 +344,6 @@ const Analyzer: React.FC = () => {
             let data;
             try { data = JSON.parse(event.data); } catch { return; }
 
-            // History response
             if (data.msg_type === 'history' && data.history) {
                 const { prices, times } = data.history;
                 tickHistoryRef.current = prices.map((price: number, i: number) => ({
@@ -321,7 +356,6 @@ const Analyzer: React.FC = () => {
                 return;
             }
 
-            // Live tick
             if (data.msg_type === 'tick' && data.tick) {
                 if (data.tick.symbol && data.tick.symbol !== symbolRef.current) return;
                 processTick(data.tick.quote, data.tick.epoch);
@@ -347,7 +381,7 @@ const Analyzer: React.FC = () => {
     }, [symbol, processTick]);
 
     // ─────────────────────────────────────────
-    //  DERIVED DATA FOR RENDERING
+    //  DERIVED DATA
     // ─────────────────────────────────────────
     const subset = ticks.slice(-1000);
     const counts = Array(10).fill(0);
@@ -355,7 +389,6 @@ const Analyzer: React.FC = () => {
     const total = subset.length;
     const maxCount = total > 0 ? Math.max(...counts) : 0;
     const minCount = total > 0 ? Math.min(...counts) : 0;
-
     const last10 = ticks.slice(-10);
     const latestTick = ticks[ticks.length - 1];
 
@@ -363,7 +396,6 @@ const Analyzer: React.FC = () => {
     //  HANDLERS
     // ─────────────────────────────────────────
     const handleAnalyse = () => {
-        // Ensure we have a signal
         if (tickHistoryRef.current.length >= MIN_SAMPLES) {
             evaluateStrategies(tickHistoryRef.current[tickHistoryRef.current.length - 1].digit);
         }
@@ -372,14 +404,20 @@ const Analyzer: React.FC = () => {
 
     const closeModal = () => setShowModal(false);
 
+    const toggleSound = () => setSoundEnabled(prev => !prev);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+    };
+
     // ─────────────────────────────────────────
     //  RENDER
     // ─────────────────────────────────────────
     return (
-        <div className='analyzer'>
+        <div className={`analyzer analyzer--${theme}`}>
             <div className='analyzer__header'>
                 <div>
-                    <div className='analyzer__title'>Optimus Trades Analyzer</div>
+                    <div className='analyzer__title'>Optimus Trades Scanner</div>
                     <div className='analyzer__subtitle'>Live digit analysis and signal detection</div>
                 </div>
                 <div className={`analyzer__status analyzer__status--${connectionStatus}`}>
@@ -452,22 +490,36 @@ const Analyzer: React.FC = () => {
                 </div>
             </div>
 
-            <button
-                className='analyzer__btn'
-                onClick={handleAnalyse}
-                disabled={tickHistoryRef.current.length < MIN_SAMPLES}
-            >
-                {tickHistoryRef.current.length < MIN_SAMPLES
-                    ? `Collecting ticks... (${tickHistoryRef.current.length}/${MIN_SAMPLES})`
-                    : 'Analyse'}
-            </button>
+            <div className='analyzer__actions'>
+                <button
+                    className={`analyzer__sound-btn ${soundEnabled ? 'analyzer__sound-btn--on' : ''}`}
+                    onClick={toggleSound}
+                    title={soundEnabled ? 'Sound alerts ON' : 'Sound alerts OFF'}
+                >
+                    {soundEnabled ? '🔊' : '🔇'} Sound: {soundEnabled ? 'ON' : 'OFF'}
+                </button>
+
+                <button
+                    className='analyzer__btn'
+                    onClick={handleAnalyse}
+                    disabled={tickHistoryRef.current.length < MIN_SAMPLES}
+                >
+                    {tickHistoryRef.current.length < MIN_SAMPLES
+                        ? `Collecting ticks... (${tickHistoryRef.current.length}/${MIN_SAMPLES})`
+                        : 'Analyse'}
+                </button>
+            </div>
+
+            <div className='analyzer__theme-toggle' onClick={toggleTheme} title='Toggle theme'>
+                {theme === 'dark' ? '☀️' : '🌙'}
+            </div>
 
             {showModal && (
                 <div className='analyzer__modal-overlay' onClick={closeModal}>
                     <div className='analyzer__modal' onClick={e => e.stopPropagation()}>
                         <button className='analyzer__modal-close' onClick={closeModal}>×</button>
                         <div className='analyzer__modal-title'>
-                            Analysis Dashboard — {SUPPORTED_MARKETS[symbol]?.label}
+                            Scanner Dashboard — {SUPPORTED_MARKETS[symbol]?.label}
                         </div>
 
                         {latestSignal?.ok ? (

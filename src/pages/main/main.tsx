@@ -29,11 +29,11 @@ import {
     resetUrlParamProcessing,
     setModalStateChangeCallback,
 } from '@/utils/trade-type-modal-handler';
-import {
+ import {
     LabelPairedChartLineCaptionRegularIcon,
     LabelPairedObjectsColumnCaptionRegularIcon,
     LabelPairedPuzzlePieceTwoCaptionBoldIcon,
-    LabelPairedChartTrendUpCaptionRegularIcon,
+    LabelPairedMagnifyingGlassCaptionRegularIcon,
 } from '@deriv/quill-icons/LabelPaired';
 import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
@@ -364,19 +364,19 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-bot-builder'
                             />
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedChartTrendUpCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Analyzer' />
-                                    </>
-                                }
-                                id='id-analyzer'
-                            >
+                 <div
+    label={
+        <>
+            <LabelPairedMagnifyingGlassCaptionRegularIcon
+                height='24px'
+                width='24px'
+                fill='var(--text-general)'
+            />
+            <Localize i18n_default_text='Scanner' />
+        </>
+    }
+    id='id-analyzer'
+>
                                 <Suspense
                                     fallback={
                                         <ChunkLoader message={localize('Please wait, loading analyzer...')} />

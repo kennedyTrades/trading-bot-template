@@ -1,4 +1,29 @@
- .analyzer {
+ // ─────────────────────────────────────────
+//  THEME VARIABLES (scoped to .analyzer)
+// ─────────────────────────────────────────
+.analyzer {
+    --a-bg: #0f1520;
+    --a-bg-2: #1a2230;
+    --a-bg-3: #131a26;
+    --a-border: rgba(38, 217, 154, 0.18);
+    --a-border-strong: rgba(38, 217, 154, 0.35);
+    --a-text: #ffffff;
+    --a-text-muted: #7d8a99;
+    --a-accent: #26d99a;
+    --a-accent-hover: #1fb884;
+
+    &--light {
+        --a-bg: #f5f7fa;
+        --a-bg-2: #ffffff;
+        --a-bg-3: #f8fafc;
+        --a-border: rgba(31, 184, 132, 0.25);
+        --a-border-strong: rgba(31, 184, 132, 0.45);
+        --a-text: #1a202c;
+        --a-text-muted: #64748b;
+        --a-accent: #1fb884;
+        --a-accent-hover: #178f66;
+    }
+
     width: 100%;
     height: 100%;
     overflow-y: auto;
@@ -6,26 +31,29 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    background-color: var(--general-main-1);
-    color: var(--text-general);
+    background-color: var(--a-bg);
+    color: var(--a-text);
+    position: relative;
+    transition: background-color 0.3s ease, color 0.3s ease;
 
+    // ─── Header ───
     &__header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         padding-bottom: 12px;
-        border-bottom: 1px solid var(--border-normal);
+        border-bottom: 1px solid var(--a-border);
     }
 
     &__title {
         font-size: 1.4rem;
         font-weight: 700;
-        color: var(--text-prominent);
+        color: var(--a-text);
     }
 
     &__subtitle {
         font-size: 0.8rem;
-        color: var(--text-less-prominent);
+        color: var(--a-text-muted);
         margin-top: 4px;
     }
 
@@ -36,13 +64,14 @@
         font-size: 0.75rem;
         padding: 6px 12px;
         border-radius: 20px;
-        background-color: var(--general-section-1);
+        background-color: var(--a-bg-3);
+        border: 1px solid var(--a-border);
 
         &-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background-color: var(--text-less-prominent);
+            background-color: var(--a-text-muted);
         }
 
         &--connected &-dot { background-color: #26d99a; box-shadow: 0 0 8px #26d99a; }
@@ -50,6 +79,7 @@
         &--error &-dot { background-color: #ef4444; }
     }
 
+    // ─── Market selector ───
     &__market-row {
         display: flex;
         flex-direction: column;
@@ -61,27 +91,28 @@
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1.5px;
-        color: var(--text-less-prominent);
+        color: var(--a-text-muted);
     }
 
     &__select {
         padding: 12px 14px;
         border-radius: 8px;
-        border: 1px solid var(--border-normal);
-        background-color: var(--general-main-2);
-        color: var(--text-general);
+        border: 1px solid var(--a-border);
+        background-color: var(--a-bg-2);
+        color: var(--a-text);
         font-size: 0.95rem;
         cursor: pointer;
         outline: none;
     }
 
+    // ─── Live tick ───
     &__live-row {
         display: flex;
         gap: 16px;
         padding: 16px;
-        background-color: var(--general-section-1);
+        background-color: var(--a-bg-3);
         border-radius: 10px;
-        border: 1px solid var(--border-normal);
+        border: 1px solid var(--a-border);
     }
 
     &__live-item {
@@ -93,20 +124,21 @@
 
     &__live-label {
         font-size: 0.75rem;
-        color: var(--text-less-prominent);
+        color: var(--a-text-muted);
     }
 
     &__live-value {
         font-size: 1.2rem;
         font-weight: 700;
-        color: #26d99a;
+        color: var(--a-accent);
     }
 
+    // ─── Digit grid ───
     &__section { display: flex; flex-direction: column; gap: 10px; }
 
     &__section-title {
         font-size: 0.8rem;
-        color: var(--text-less-prominent);
+        color: var(--a-text-muted);
     }
 
     &__digit-grid {
@@ -119,8 +151,8 @@
         padding: 12px 6px;
         text-align: center;
         border-radius: 10px;
-        border: 1.5px solid var(--border-normal);
-        background-color: var(--general-section-1);
+        border: 1.5px solid var(--a-border);
+        background-color: var(--a-bg-3);
         transition: all 0.3s ease;
 
         &--highest {
@@ -141,15 +173,16 @@
     &__digit-num {
         font-size: 1.15rem;
         font-weight: 800;
-        color: var(--text-prominent);
+        color: var(--a-text);
     }
 
     &__digit-pct {
         font-size: 0.75rem;
-        color: var(--text-less-prominent);
+        color: var(--a-text-muted);
         margin-top: 4px;
     }
 
+    // ─── Last 10 digits ───
     &__last-digits {
         display: flex;
         gap: 8px;
@@ -165,9 +198,9 @@
         justify-content: center;
         font-weight: 700;
         font-size: 0.85rem;
-        border: 2px solid var(--border-normal);
-        background-color: var(--general-section-1);
-        color: var(--text-general);
+        border: 2px solid var(--a-border);
+        background-color: var(--a-bg-3);
+        color: var(--a-text);
 
         &--newest {
             border-color: #26d99a;
@@ -176,25 +209,78 @@
         }
     }
 
-    &__btn {
-        padding: 14px;
+    // ─── Actions (sound + analyse) ───
+    &__actions {
+        display: flex;
+        gap: 12px;
+        align-items: stretch;
+        margin-top: 8px;
+    }
+
+    &__sound-btn {
+        padding: 18px 20px;
         border-radius: 10px;
-        background-color: #26d99a;
+        background-color: var(--a-bg-3);
+        color: var(--a-text-muted);
+        border: 1.5px solid var(--a-border);
+        font-size: 0.9rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s;
+        white-space: nowrap;
+
+        &:hover { border-color: var(--a-border-strong); color: var(--a-text); }
+
+        &--on {
+            color: var(--a-accent);
+            border-color: var(--a-accent);
+            background-color: rgba(38, 217, 154, 0.1);
+        }
+    }
+
+    &__btn {
+        flex: 1;
+        padding: 18px 22px;
+        border-radius: 10px;
+        background-color: var(--a-accent);
         color: #ffffff;
-        font-size: 1rem;
+        font-size: 1.1rem;
         font-weight: 700;
         border: none;
         cursor: pointer;
         transition: background-color 0.2s;
-        margin-top: 8px;
+        letter-spacing: 0.5px;
 
-        &:hover:not(:disabled) { background-color: #1fb884; }
+        &:hover:not(:disabled) { background-color: var(--a-accent-hover); }
         &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
 
-    // ─────────────────────────────────────────
-    //  MODAL
-    // ─────────────────────────────────────────
+    // ─── Theme toggle ───
+    &__theme-toggle {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        background-color: var(--a-bg-2);
+        border: 1.5px solid var(--a-border-strong);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        cursor: pointer;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
+        transition: all 0.25s ease;
+        z-index: 100;
+
+        &:hover {
+            transform: scale(1.08);
+            border-color: var(--a-accent);
+        }
+    }
+
+    // ─── Modal ───
     &__modal-overlay {
         position: fixed;
         top: 0;
