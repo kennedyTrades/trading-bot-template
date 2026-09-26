@@ -1,7 +1,4 @@
- // ─────────────────────────────────────────
-//  THEME VARIABLES (scoped to .analyzer)
-// ─────────────────────────────────────────
-.analyzer {
+ .analyzer {
     --a-bg: #0f1520;
     --a-bg-2: #1a2230;
     --a-bg-3: #131a26;
@@ -36,13 +33,18 @@
     position: relative;
     transition: background-color 0.3s ease, color 0.3s ease;
 
-    // ─── Header ───
     &__header {
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
         padding-bottom: 12px;
         border-bottom: 1px solid var(--a-border);
+    }
+
+    &__header-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
     &__title {
@@ -79,7 +81,27 @@
         &--error &-dot { background-color: #ef4444; }
     }
 
-    // ─── Market selector ───
+    // Theme toggle now lives in the header, right beside the Connected badge
+    &__theme-toggle {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background-color: var(--a-bg-3);
+        border: 1.5px solid var(--a-border-strong);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        user-select: none;
+
+        &:hover {
+            transform: scale(1.08);
+            border-color: var(--a-accent);
+        }
+    }
+
     &__market-row {
         display: flex;
         flex-direction: column;
@@ -105,7 +127,6 @@
         outline: none;
     }
 
-    // ─── Live tick ───
     &__live-row {
         display: flex;
         gap: 16px;
@@ -133,7 +154,6 @@
         color: var(--a-accent);
     }
 
-    // ─── Digit grid ───
     &__section { display: flex; flex-direction: column; gap: 10px; }
 
     &__section-title {
@@ -182,7 +202,6 @@
         margin-top: 4px;
     }
 
-    // ─── Last 10 digits ───
     &__last-digits {
         display: flex;
         gap: 8px;
@@ -209,7 +228,6 @@
         }
     }
 
-    // ─── Actions (sound + analyse) ───
     &__actions {
         display: flex;
         gap: 12px;
@@ -255,32 +273,6 @@
         &:disabled { opacity: 0.5; cursor: not-allowed; }
     }
 
-    // ─── Theme toggle ───
-    &__theme-toggle {
-        position: fixed;
-        bottom: 24px;
-        right: 24px;
-        width: 48px;
-        height: 48px;
-        border-radius: 50%;
-        background-color: var(--a-bg-2);
-        border: 1.5px solid var(--a-border-strong);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.4rem;
-        cursor: pointer;
-        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35);
-        transition: all 0.25s ease;
-        z-index: 100;
-
-        &:hover {
-            transform: scale(1.08);
-            border-color: var(--a-accent);
-        }
-    }
-
-    // ─── Modal ───
     &__modal-overlay {
         position: fixed;
         top: 0;
@@ -366,16 +358,5 @@
 
         &--loss { color: #ef4444; }
         &--warn { color: #f59e0b; }
-    }
-
-    &__modal-stats {
-        display: flex;
-        justify-content: space-between;
-        padding-top: 12px;
-        border-top: 1px solid #1e2938;
-        color: #7d8a99;
-        font-size: 0.85rem;
-
-        span { color: #00bcd4; font-weight: 700; }
     }
 }
