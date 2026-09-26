@@ -47,6 +47,7 @@ import './main.scss';
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 const Tutorial = lazy(() => import('../tutorials'));
 const Analyzer = lazy(() => import('../analyzer'));
+const RiskCalculator = lazy(() => import('../risk-calculator'));
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
