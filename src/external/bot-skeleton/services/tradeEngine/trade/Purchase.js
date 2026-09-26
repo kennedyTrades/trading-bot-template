@@ -16,55 +16,93 @@ export default Engine =>
                 return Promise.resolve();
             }
 
-            // 🎯 BULK TRADES: Determine how many contracts to fire
+            // ── BULK TRADES: Determine how many contracts to fire ──
             const bulkEnabled = options.bulk === 'ENABLED';
             const numContracts = bulkEnabled ? Math.max(1, Number(options.count) || 1) : 1;
 
-            // If bulk is disabled or count is 1, use the normal single-trade path
             if (numContracts <= 1) {
                 return this._executeSinglePurchase(contract_type);
             }
 
-            // 🚀 TRUE SIMULTANEOUS EXECUTION
-            // We build ALL trade requests synchronously, then fire them in
-            // the SAME event loop tick using Promise.all(). This gives Deriv
-            // all requests at the exact same instant, resulting in near-
-            // identical entry prices.
+            // ═══════════════════════════════════════════════════════════
+            //  BULK PATH — Sequential firing
+            //  Deriv's API does NOT accept parallel buy calls for the
+            //  same contract type. We MUST fire them one at a time and
+            //  await each response before firing the next.
+            // ═══════════════════════════════════════════════════════════
 
-            const tradePromises = [];
+            this.isSold = false;
 
-            // Build all requests FIRST (synchronously) so they're ready to fire together
-            for (let i = 0; i < numContracts; i++) {
-                // Build the trade option synchronously
-                const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
+            // Broadcast once at the start so the UI shows "purchase sent"
+            contractStatus({
+                id: 'contract.purchase_sent',
+                data: this.tradeOptions.amount * numContracts,
+            });
 
-                // Push the promise WITHOUT awaiting it — this queues the send
-                tradePromises.push(
-                    api_base.api.send(trade_option)
-                );
-            }
-
-            // 🔥 FIRE ALL AT ONCE — Promise.allSettled awaits all simultaneously
-            const results = await Promise.allSettled(tradePromises);
-
-            // Process each successful result
             let successCount = 0;
-            for (let i = 0; i < results.length; i++) {
-                const result = results[i];
+            const purchaseResponses = [];
 
-                if (result.status === 'fulfilled' && result.value && result.value.buy) {
-                    successCount++;
-                    this._handlePurchaseSuccess(result.value, contract_type);
-                } else if (result.status === 'rejected') {
-                    console.warn(`[PURCHASE] Trade #${i + 1} failed:`, result.reason);
+            for (let i = 0; i < numContracts; i++) {
+                try {
+                    // Build the trade option fresh for each iteration
+                    const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
+
+                    // Fire ONE request and wait for the response
+                    const response = await api_base.api.send(trade_option);
+
+                    if (response && response.buy && response.buy.contract_id) {
+                        // Register this contract with the store
+                        this.contractId = response.buy.contract_id;
+
+                        // Broadcast this individual purchase
+                        contractStatus({
+                            id: 'contract.purchase_received',
+                            data: response.buy.transaction_id,
+                            buy: response.buy,
+                        });
+
+                        // Log this specific trade
+                        log(LogTypes.PURCHASE, { transaction_id: response.buy.transaction_id });
+                        info({
+                            accountID: this.accountInfo.loginid,
+                            totalRuns: this.updateAndReturnTotalRuns(),
+                            transaction_ids: { buy: response.buy.transaction_id },
+                            contract_type,
+                            buy_price: response.buy.buy_price,
+                        });
+
+                        purchaseResponses.push(response.buy);
+                        successCount++;
+
+                        console.log(
+                            `[BULK] Contract ${i + 1}/${numContracts} purchased — ` +
+                            `ID ${response.buy.contract_id}, price ${response.buy.buy_price}`
+                        );
+                    } else {
+                        console.warn(`[BULK] Contract ${i + 1}/${numContracts} — invalid response:`, response);
+                    }
+                } catch (err) {
+                    console.warn(`[BULK] Contract ${i + 1}/${numContracts} failed:`, err);
+                    // Continue to next contract — don't abort the whole batch
                 }
             }
+
+            // After all contracts fired, mark the purchase as complete
+            if (successCount > 0) {
+                this.store.dispatch(purchaseSuccessful());
+            }
+
+            if (this.is_proposal_subscription_required) {
+                this.renewProposalsOnPurchase();
+            }
+
+            console.log(`[BULK] Total purchased: ${successCount}/${numContracts}`);
 
             return Promise.resolve();
         }
 
         _executeSinglePurchase(contract_type) {
-            // Standard single-trade path (used when bulk is disabled)
+            // ── Single trade path (unchanged from template) ──
             if (this.is_proposal_subscription_required) {
                 const { id, askPrice } = this.selectProposal(contract_type);
 
@@ -137,7 +175,6 @@ export default Engine =>
         }
 
         _handlePurchaseSuccess(response, contract_type) {
-            // Extract the buy object from the response
             const buy = response.buy || response;
 
             if (!buy || !buy.contract_id) {
