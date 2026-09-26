@@ -5,7 +5,7 @@
     --a-border: rgba(38, 217, 154, 0.18);
     --a-border-strong: rgba(38, 217, 154, 0.35);
     --a-text: #ffffff;
-    --a-text-muted: #7d8a99;
+    --a-text-muted: #8a96a8;
     --a-accent: #26d99a;
     --a-accent-hover: #1fb884;
 
@@ -16,7 +16,7 @@
         --a-border: rgba(31, 184, 132, 0.25);
         --a-border-strong: rgba(31, 184, 132, 0.45);
         --a-text: #1a202c;
-        --a-text-muted: #64748b;
+        --a-text-muted: #556070;
         --a-accent: #1fb884;
         --a-accent-hover: #178f66;
     }
@@ -24,12 +24,13 @@
     width: 100%;
     height: 100%;
     overflow-y: auto;
-    padding: 24px;
+    padding: 28px;
     display: flex;
     flex-direction: column;
-    gap: 20px;
+    gap: 22px;
     background-color: var(--a-bg);
     color: var(--a-text);
+    font-size: 1.05rem;   // ← bigger base font
     position: relative;
     transition: background-color 0.3s ease, color 0.3s ease;
 
@@ -37,7 +38,7 @@
         display: flex;
         justify-content: space-between;
         align-items: flex-start;
-        padding-bottom: 12px;
+        padding-bottom: 14px;
         border-bottom: 1px solid var(--a-border);
     }
 
@@ -48,30 +49,30 @@
     }
 
     &__title {
-        font-size: 1.4rem;
-        font-weight: 700;
+        font-size: 1.7rem;   // ← bigger
+        font-weight: 800;
         color: var(--a-text);
     }
 
     &__subtitle {
-        font-size: 0.8rem;
+        font-size: 0.95rem;   // ← bigger
         color: var(--a-text-muted);
-        margin-top: 4px;
+        margin-top: 6px;
     }
 
     &__status {
         display: flex;
         align-items: center;
         gap: 8px;
-        font-size: 0.75rem;
-        padding: 6px 12px;
+        font-size: 0.9rem;   // ← bigger
+        padding: 8px 14px;
         border-radius: 20px;
         background-color: var(--a-bg-3);
         border: 1px solid var(--a-border);
 
         &-dot {
-            width: 8px;
-            height: 8px;
+            width: 9px;
+            height: 9px;
             border-radius: 50%;
             background-color: var(--a-text-muted);
         }
@@ -81,17 +82,16 @@
         &--error &-dot { background-color: #ef4444; }
     }
 
-    // Theme toggle now lives in the header, right beside the Connected badge
     &__theme-toggle {
-        width: 36px;
-        height: 36px;
+        width: 42px;
+        height: 42px;
         border-radius: 50%;
         background-color: var(--a-bg-3);
         border: 1.5px solid var(--a-border-strong);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1rem;
+        font-size: 1.2rem;
         cursor: pointer;
         transition: all 0.25s ease;
         user-select: none;
@@ -105,11 +105,11 @@
     &__market-row {
         display: flex;
         flex-direction: column;
-        gap: 6px;
+        gap: 8px;
     }
 
     &__label {
-        font-size: 0.7rem;
+        font-size: 0.85rem;   // ← bigger
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 1.5px;
@@ -117,12 +117,12 @@
     }
 
     &__select {
-        padding: 12px 14px;
-        border-radius: 8px;
+        padding: 14px 16px;
+        border-radius: 10px;
         border: 1px solid var(--a-border);
         background-color: var(--a-bg-2);
         color: var(--a-text);
-        font-size: 0.95rem;
+        font-size: 1.05rem;   // ← bigger
         cursor: pointer;
         outline: none;
     }
@@ -130,7 +130,7 @@
     &__live-row {
         display: flex;
         gap: 16px;
-        padding: 16px;
+        padding: 18px;
         background-color: var(--a-bg-3);
         border-radius: 10px;
         border: 1px solid var(--a-border);
@@ -140,35 +140,35 @@
         flex: 1;
         display: flex;
         flex-direction: column;
-        gap: 4px;
+        gap: 6px;
     }
 
     &__live-label {
-        font-size: 0.75rem;
+        font-size: 0.9rem;   // ← bigger
         color: var(--a-text-muted);
     }
 
     &__live-value {
-        font-size: 1.2rem;
+        font-size: 1.5rem;   // ← bigger
         font-weight: 700;
         color: var(--a-accent);
     }
 
-    &__section { display: flex; flex-direction: column; gap: 10px; }
+    &__section { display: flex; flex-direction: column; gap: 12px; }
 
     &__section-title {
-        font-size: 0.8rem;
+        font-size: 0.95rem;   // ← bigger
         color: var(--a-text-muted);
     }
 
     &__digit-grid {
         display: grid;
         grid-template-columns: repeat(5, 1fr);
-        gap: 8px;
+        gap: 10px;
     }
 
     &__digit-cell {
-        padding: 12px 6px;
+        padding: 14px 8px;
         text-align: center;
         border-radius: 10px;
         border: 1.5px solid var(--a-border);
@@ -191,32 +191,32 @@
     }
 
     &__digit-num {
-        font-size: 1.15rem;
+        font-size: 1.4rem;   // ← bigger
         font-weight: 800;
         color: var(--a-text);
     }
 
     &__digit-pct {
-        font-size: 0.75rem;
+        font-size: 0.9rem;   // ← bigger
         color: var(--a-text-muted);
         margin-top: 4px;
     }
 
     &__last-digits {
         display: flex;
-        gap: 8px;
+        gap: 10px;
         flex-wrap: wrap;
     }
 
     &__chip {
-        width: 34px;
-        height: 34px;
+        width: 40px;      // ← bigger
+        height: 40px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 1rem;   // ← bigger
         border: 2px solid var(--a-border);
         background-color: var(--a-bg-3);
         color: var(--a-text);
@@ -236,12 +236,12 @@
     }
 
     &__sound-btn {
-        padding: 18px 20px;
+        padding: 18px 22px;
         border-radius: 10px;
         background-color: var(--a-bg-3);
         color: var(--a-text-muted);
         border: 1.5px solid var(--a-border);
-        font-size: 0.9rem;
+        font-size: 1rem;   // ← bigger
         font-weight: 700;
         cursor: pointer;
         transition: all 0.2s;
@@ -262,7 +262,7 @@
         border-radius: 10px;
         background-color: var(--a-accent);
         color: #ffffff;
-        font-size: 1.1rem;
+        font-size: 1.2rem;   // ← bigger
         font-weight: 700;
         border: none;
         cursor: pointer;
@@ -292,52 +292,60 @@
         background-color: #0b1220;
         border: 1px solid rgba(38, 217, 154, 0.4);
         border-radius: 16px;
-        padding: 28px;
+        padding: 30px;
         width: 100%;
-        max-width: 540px;
+        max-width: 580px;
         display: flex;
         flex-direction: column;
-        gap: 14px;
+        gap: 16px;
         position: relative;
         color: #ffffff;
+        font-size: 1.05rem;
     }
 
     &__modal-close {
         position: absolute;
-        top: 12px;
-        right: 16px;
+        top: 14px;
+        right: 18px;
         background: none;
         border: none;
         color: #7d8a99;
-        font-size: 1.6rem;
+        font-size: 1.8rem;
         cursor: pointer;
         line-height: 1;
         &:hover { color: #ef4444; }
     }
 
     &__modal-title {
-        font-size: 1rem;
+        font-size: 1.15rem;
         font-weight: 700;
         color: #00bcd4;
         padding-right: 30px;
     }
 
+    &__modal-strategy {
+        font-size: 0.95rem;
+        color: #7d8a99;
+        margin-top: -6px;
+    }
+
     &__modal-status {
         color: #4caf50;
         font-weight: 700;
-        font-size: 0.9rem;
+        font-size: 1rem;
 
         &--warn { color: #f59e0b; }
     }
 
     &__modal-action {
-        font-size: 1.5rem;
+        font-size: 1.8rem;
         font-weight: 800;
         color: #ffeb3b;
+        letter-spacing: 0.5px;
     }
 
     &__modal-entry {
-        font-size: 0.95rem;
+        font-size: 1.05rem;
         color: #ffffff;
         line-height: 1.6;
 
@@ -345,16 +353,17 @@
     }
 
     &__modal-detail {
-        opacity: 0.75;
-        font-size: 0.8rem;
-        margin-top: 8px;
+        opacity: 0.8;
+        font-size: 0.9rem;
+        margin-top: 6px;
         color: #a0aec0;
+        line-height: 1.6;
     }
 
     &__modal-running {
         color: #26d99a;
         font-weight: 700;
-        font-size: 0.85rem;
+        font-size: 0.95rem;
 
         &--loss { color: #ef4444; }
         &--warn { color: #f59e0b; }

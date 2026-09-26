@@ -1,4 +1,4 @@
- import React, { useEffect, useRef, useState, useCallback } from 'react';
+ import React, { useEffect, useRef, useState } from 'react';
 import './analyzer.scss';
 
 // ─────────────────────────────────────────────────────────
@@ -10,6 +10,7 @@ const WS_URL = `wss://api.derivws.com/trading/v1/options/ws/public?app_id=${APP_
 const HISTORY_SIZE = 1000;
 const MIN_SAMPLES = 500;
 const RARE_THRESHOLD = 9.2;
+const SIDE_THRESHOLD = 45;
 
 const SUPPORTED_MARKETS: Record<string, { label: string; decimals: number }> = {
     '1HZ10V': { label: 'Volatility 10 (1s) Index', decimals: 2 },
@@ -23,6 +24,14 @@ const SUPPORTED_MARKETS: Record<string, { label: string; decimals: number }> = {
     R_75: { label: 'Volatility 75 Index', decimals: 3 },
     R_100: { label: 'Volatility 100 Index', decimals: 3 },
 };
+
+const STRATEGIES = {
+    matches_differs: 'Matches & Differs',
+    even_odd: 'Even & Odd',
+    over_under: 'Over & Under',
+} as const;
+
+type StrategyKey = keyof typeof STRATEGIES;
 
 // ─────────────────────────────────────────────────────────
 //  TYPES
@@ -38,20 +47,11 @@ interface Signal {
     ok: boolean;
     strategy?: string;
     confidence?: string;
-    predicted?: number;
-    entries?: number[];
+    predicted?: string;
+    entries?: string[];
     reason?: string;
     message?: string;
     rarestInfo?: { digit: number; pct: number };
-    result?: 'WIN' | 'LOSS' | null;
-    resultDigit?: number | null;
-    firedAtIndex?: number;
-}
-
-interface Stats {
-    totalSignals: number;
-    wins: number;
-    losses: number;
 }
 
 // ─────────────────────────────────────────────────────────
@@ -67,9 +67,6 @@ const formatPrice = (price: number, symbol: string) => {
     return Number(price).toFixed(decimals);
 };
 
-// ─────────────────────────────────────────────────────────
-//  BEEP (single beep)
-// ─────────────────────────────────────────────────────────
 const playBeep = (audioCtxRef: React.MutableRefObject<AudioContext | null>) => {
     try {
         if (!audioCtxRef.current) {
@@ -101,15 +98,15 @@ const playBeep = (audioCtxRef: React.MutableRefObject<AudioContext | null>) => {
 // ─────────────────────────────────────────────────────────
 const Analyzer: React.FC = () => {
     const [symbol, setSymbol] = useState('1HZ100V');
+    const [strategy, setStrategy] = useState<StrategyKey>('matches_differs');
     const [ticks, setTicks] = useState<Tick[]>([]);
     const [frozenSignal, setFrozenSignal] = useState<Signal | null>(null);
     const [showModal, setShowModal] = useState(false);
     const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'error'>('connecting');
 
     const [soundEnabled, setSoundEnabled] = useState(true);
-    const [theme, setTheme] = useState<'dark' | 'light'>('light');  // ← default LIGHT
+    const [theme, setTheme] = useState<'dark' | 'light'>('light');
 
-    // Refs
     const wsRef = useRef<WebSocket | null>(null);
     const tickHistoryRef = useRef<Tick[]>([]);
     const symbolRef = useRef(symbol);
@@ -121,9 +118,9 @@ const Analyzer: React.FC = () => {
     useEffect(() => { soundEnabledRef.current = soundEnabled; }, [soundEnabled]);
 
     // ─────────────────────────────────────────
-    //  3-STRATEGY ENGINE — returns a signal, does NOT set state
+    //  STRATEGY ENGINE
     // ─────────────────────────────────────────
-    const calculateSignal = (currentDigit: number): Signal => {
+    const calculateSignal = (currentDigit: number, strategyKey: StrategyKey): Signal => {
         const history = tickHistoryRef.current;
         const total = history.length;
 
@@ -136,68 +133,137 @@ const Analyzer: React.FC = () => {
 
         const percents = counts.map(c => (c / total) * 100);
         const sortedDigits = [...Array(10).keys()].sort((a, b) => percents[a] - percents[b]);
-        const rareDigits = sortedDigits.filter(d => percents[d] < RARE_THRESHOLD);
 
-        const last50 = history.slice(-50).map(t => t.digit);
-        const recentCounts = Array(10).fill(0);
-        last50.forEach(d => recentCounts[d]++);
+        // ═══════════════════════════════════════════════
+        //  STRATEGY 1: MATCHES & DIFFERS
+        // ═══════════════════════════════════════════════
+        if (strategyKey === 'matches_differs') {
+            const rareDigits = sortedDigits.filter(d => percents[d] < RARE_THRESHOLD);
 
-        // Strategy 1
-        if (rareDigits.length >= 2) {
-            const predicted = rareDigits[0];
-            const entries = rareDigits.slice(1, 3);
-            if (entries.length > 0) {
+            if (rareDigits.length >= 2) {
+                const predicted = rareDigits[0];
+                const entries = rareDigits.slice(1, 3).map(String);
                 return {
                     ok: true,
-                    strategy: 'Cold Digit Under 9.2%',
+                    strategy: 'Cold Digit — Matches & Differs',
                     confidence: percents[predicted] < 8.5 ? 'HIGH' : 'MEDIUM',
-                    predicted,
+                    predicted: String(predicted),
                     entries,
-                    reason: `Digit ${predicted} at ${percents[predicted].toFixed(1)}% is the rarest`,
+                    reason: `Digit ${predicted} at ${percents[predicted].toFixed(1)}% is the rarest. DIFFER this digit. Enter on: ${entries.join(' or ')}.`,
                 };
             }
-        }
 
-        // Strategy 2
-        if (rareDigits.length === 1) {
-            const predicted = rareDigits[0];
-            const last10 = history.slice(-10).map(t => t.digit);
-            const recentUnique = [...new Set(last10)].filter(d => d !== predicted);
-            if (recentUnique.length > 0) {
-                const entries = recentUnique.slice(0, 2);
-                return {
-                    ok: true,
-                    strategy: 'Single Cold Digit + Recent Entry',
-                    confidence: percents[predicted] < 8.5 ? 'MEDIUM' : 'LOW',
-                    predicted,
-                    entries,
-                    reason: `Digit ${predicted} at ${percents[predicted].toFixed(1)}% is the only rare digit`,
-                };
+            if (rareDigits.length === 1) {
+                const predicted = rareDigits[0];
+                const last10 = history.slice(-10).map(t => t.digit);
+                const recentUnique = [...new Set(last10)].filter(d => d !== predicted);
+                if (recentUnique.length > 0) {
+                    const entries = recentUnique.slice(0, 2).map(String);
+                    return {
+                        ok: true,
+                        strategy: 'Single Cold Digit',
+                        confidence: percents[predicted] < 8.5 ? 'MEDIUM' : 'LOW',
+                        predicted: String(predicted),
+                        entries,
+                        reason: `Digit ${predicted} at ${percents[predicted].toFixed(1)}% is the only rare digit. Enter on: ${entries.join(' or ')}.`,
+                    };
+                }
             }
-        }
 
-        // Strategy 3
-        const last30 = history.slice(-30).map(t => t.digit);
-        const inLast30 = new Set(last30);
-        const droughtDigits = [...Array(10).keys()].filter(d => !inLast30.has(d));
-        if (droughtDigits.length > 0 && recentCounts[currentDigit] >= 2) {
-            const predicted = droughtDigits[0];
-            const entries = [currentDigit];
             return {
-                ok: true,
-                strategy: 'Recent Drought',
-                confidence: 'LOW',
-                predicted,
-                entries,
-                reason: `Digit ${predicted} hasn't appeared in 30 ticks`,
+                ok: false,
+                message: `Rarest digit is ${sortedDigits[0]} at ${percents[sortedDigits[0]].toFixed(1)}% — not rare enough`,
+                rarestInfo: { digit: sortedDigits[0], pct: percents[sortedDigits[0]] },
             };
         }
 
-        return {
-            ok: false,
-            message: `Rarest digit is ${sortedDigits[0]} at ${percents[sortedDigits[0]].toFixed(1)}% — not rare enough`,
-            rarestInfo: { digit: sortedDigits[0], pct: percents[sortedDigits[0]] },
-        };
+        // ═══════════════════════════════════════════════
+        //  STRATEGY 2: EVEN & ODD
+        // ═══════════════════════════════════════════════
+        if (strategyKey === 'even_odd') {
+            const evenDigits = [0, 2, 4, 6, 8];
+            const oddDigits = [1, 3, 5, 7, 9];
+
+            const evenCount = evenDigits.reduce((sum, d) => sum + counts[d], 0);
+            const oddCount = oddDigits.reduce((sum, d) => sum + counts[d], 0);
+
+            const evenPct = (evenCount / total) * 100;
+            const oddPct = (oddCount / total) * 100;
+
+            // If EVEN is under threshold (meaning ODD is over) → predict EVEN
+            // If ODD is under threshold (meaning EVEN is over) → predict ODD
+            if (evenPct < SIDE_THRESHOLD) {
+                return {
+                    ok: true,
+                    strategy: 'Even & Odd',
+                    confidence: evenPct < 40 ? 'HIGH' : 'MEDIUM',
+                    predicted: 'EVEN',
+                    entries: [],
+                    reason: `Even digits appeared only ${evenPct.toFixed(1)}% — market favours EVEN. Buy EVEN contract on next tick.`,
+                };
+            }
+
+            if (oddPct < SIDE_THRESHOLD) {
+                return {
+                    ok: true,
+                    strategy: 'Even & Odd',
+                    confidence: oddPct < 40 ? 'HIGH' : 'MEDIUM',
+                    predicted: 'ODD',
+                    entries: [],
+                    reason: `Odd digits appeared only ${oddPct.toFixed(1)}% — market favours ODD. Buy ODD contract on next tick.`,
+                };
+            }
+
+            return {
+                ok: false,
+                message: `Even ${evenPct.toFixed(1)}% / Odd ${oddPct.toFixed(1)}% — balanced, no edge`,
+                rarestInfo: { digit: 0, pct: Math.min(evenPct, oddPct) },
+            };
+        }
+
+        // ═══════════════════════════════════════════════
+        //  STRATEGY 3: OVER & UNDER
+        // ═══════════════════════════════════════════════
+        if (strategyKey === 'over_under') {
+            const underDigits = [0, 1, 2, 3, 4];  // 0-4
+            const overDigits = [5, 6, 7, 8, 9];   // 5-9
+
+            const underCount = underDigits.reduce((sum, d) => sum + counts[d], 0);
+            const overCount = overDigits.reduce((sum, d) => sum + counts[d], 0);
+
+            const underPct = (underCount / total) * 100;
+            const overPct = (overCount / total) * 100;
+
+            if (underPct < SIDE_THRESHOLD) {
+                return {
+                    ok: true,
+                    strategy: 'Over & Under',
+                    confidence: underPct < 40 ? 'HIGH' : 'MEDIUM',
+                    predicted: 'UNDER 5',
+                    entries: [],
+                    reason: `Digits 0-4 appeared only ${underPct.toFixed(1)}% — market favours UNDER. Buy UNDER 5 contract on next tick.`,
+                };
+            }
+
+            if (overPct < SIDE_THRESHOLD) {
+                return {
+                    ok: true,
+                    strategy: 'Over & Under',
+                    confidence: overPct < 40 ? 'HIGH' : 'MEDIUM',
+                    predicted: 'OVER 4',
+                    entries: [],
+                    reason: `Digits 5-9 appeared only ${overPct.toFixed(1)}% — market favours OVER. Buy OVER 4 contract on next tick.`,
+                };
+            }
+
+            return {
+                ok: false,
+                message: `Under ${underPct.toFixed(1)}% / Over ${overPct.toFixed(1)}% — balanced, no edge`,
+                rarestInfo: { digit: 5, pct: Math.min(underPct, overPct) },
+            };
+        }
+
+        return { ok: false, message: 'Unknown strategy' };
     };
 
     // ─────────────────────────────────────────
@@ -310,12 +376,10 @@ const Analyzer: React.FC = () => {
         if (tickHistoryRef.current.length < MIN_SAMPLES) return;
 
         const currentDigit = tickHistoryRef.current[tickHistoryRef.current.length - 1].digit;
-        const signal = calculateSignal(currentDigit);
+        const signal = calculateSignal(currentDigit, strategy);
 
-        // Freeze the signal — do NOT update until next Analyse click
-        setFrozenSignal({ ...signal, result: null, resultDigit: null });
+        setFrozenSignal({ ...signal });
 
-        // 🔊 Beep ONCE, only if a real signal fired
         if (signal.ok && soundEnabledRef.current) {
             playBeep(audioCtxRef);
         }
@@ -338,13 +402,7 @@ const Analyzer: React.FC = () => {
                     <div className='analyzer__subtitle'>Live digit analysis and signal detection</div>
                 </div>
                 <div className='analyzer__header-right'>
-                    <div
-                        className='analyzer__theme-toggle'
-                        onClick={toggleTheme}
-                        title='Toggle theme'
-                        role='button'
-                        tabIndex={0}
-                    >
+                    <div className='analyzer__theme-toggle' onClick={toggleTheme} title='Toggle theme'>
                         {theme === 'dark' ? '☀️' : '🌙'}
                     </div>
                     <div className={`analyzer__status analyzer__status--${connectionStatus}`}>
@@ -356,7 +414,7 @@ const Analyzer: React.FC = () => {
             </div>
 
             <div className='analyzer__market-row'>
-                <label className='analyzer__label'>Market</label>
+                <label className='analyzer__label'>Select Market</label>
                 <select
                     className='analyzer__select'
                     value={symbol}
@@ -364,6 +422,19 @@ const Analyzer: React.FC = () => {
                 >
                     {Object.entries(SUPPORTED_MARKETS).map(([sym, info]) => (
                         <option key={sym} value={sym}>{info.label}</option>
+                    ))}
+                </select>
+            </div>
+
+            <div className='analyzer__market-row'>
+                <label className='analyzer__label'>Select Strategy</label>
+                <select
+                    className='analyzer__select'
+                    value={strategy}
+                    onChange={e => setStrategy(e.target.value as StrategyKey)}
+                >
+                    {Object.entries(STRATEGIES).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
                     ))}
                 </select>
             </div>
@@ -422,7 +493,6 @@ const Analyzer: React.FC = () => {
                 <button
                     className={`analyzer__sound-btn ${soundEnabled ? 'analyzer__sound-btn--on' : ''}`}
                     onClick={toggleSound}
-                    title={soundEnabled ? 'Sound alerts ON' : 'Sound alerts OFF'}
                 >
                     {soundEnabled ? '🔊' : '🔇'} Sound: {soundEnabled ? 'ON' : 'OFF'}
                 </button>
@@ -443,7 +513,10 @@ const Analyzer: React.FC = () => {
                     <div className='analyzer__modal' onClick={e => e.stopPropagation()}>
                         <button className='analyzer__modal-close' onClick={closeModal}>×</button>
                         <div className='analyzer__modal-title'>
-                            Scanner Dashboard — {SUPPORTED_MARKETS[symbol]?.label}
+                            Scanner — {SUPPORTED_MARKETS[symbol]?.label}
+                        </div>
+                        <div className='analyzer__modal-strategy'>
+                            Strategy: {STRATEGIES[strategy]}
                         </div>
 
                         {frozenSignal.ok ? (
@@ -454,17 +527,22 @@ const Analyzer: React.FC = () => {
                                     {frozenSignal.confidence} confidence
                                 </div>
                                 <div className='analyzer__modal-action'>
-                                    Market will DIFFER {frozenSignal.predicted}
+                                    Market will {frozenSignal.predicted}
                                 </div>
-                                <div className='analyzer__modal-entry'>
-                                    Entry Point: Enter when the last digit is{' '}
-                                    <strong>{frozenSignal.entries?.join(' or ')}</strong>
-                                    <div className='analyzer__modal-detail'>
-                                        <em>Strategy: {frozenSignal.strategy}</em>
-                                        <br />
-                                        {frozenSignal.reason}
+
+                                {frozenSignal.entries && frozenSignal.entries.length > 0 && (
+                                    <div className='analyzer__modal-entry'>
+                                        Entry Point: Enter when the last digit is{' '}
+                                        <strong>{frozenSignal.entries.join(' or ')}</strong>
                                     </div>
+                                )}
+
+                                <div className='analyzer__modal-detail'>
+                                    <em>{frozenSignal.strategy}</em>
+                                    <br />
+                                    {frozenSignal.reason}
                                 </div>
+
                                 <div className='analyzer__modal-running'>
                                     Signal captured — click Analyse again for a fresh scan
                                 </div>
@@ -477,7 +555,7 @@ const Analyzer: React.FC = () => {
                                 <div className='analyzer__modal-action'>Market is currently balanced</div>
                                 <div className='analyzer__modal-entry'>
                                     {frozenSignal?.rarestInfo
-                                        ? `Rarest digit ${frozenSignal.rarestInfo.digit} is only ${frozenSignal.rarestInfo.pct.toFixed(1)}% — not rare enough`
+                                        ? `Rarest digit is only ${frozenSignal.rarestInfo.pct.toFixed(1)}% — not enough edge`
                                         : (frozenSignal?.message || 'Waiting for better setup')}
                                 </div>
                                 <div className='analyzer__modal-running analyzer__modal-running--warn'>
