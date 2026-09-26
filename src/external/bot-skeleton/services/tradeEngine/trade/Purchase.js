@@ -25,42 +25,88 @@ export default Engine =>
                 return this._executeSinglePurchase(contract_type);
             }
 
-            // 🚀 TRUE SIMULTANEOUS EXECUTION
-            // We build ALL trade requests synchronously, then fire them in
-            // the SAME event loop tick using Promise.all(). This gives Deriv
-            // all requests at the exact same instant, resulting in near-
-            // identical entry prices.
+            return this._executeBulkPurchase(contract_type, numContracts);
+        }
 
+        async _executeBulkPurchase(contract_type, numContracts) {
+            this.isSold = false;
+
+            contractStatus({
+                id: 'contract.purchase_sent',
+                data: this.is_proposal_subscription_required
+                    ? this.selectProposal(contract_type)?.askPrice
+                    : this.tradeOptions.amount,
+            });
+
+            // 🚀 Proposal-based contract types (e.g. most non-Rise/Fall types)
+            // A proposal id can only be bought once, so we can't reuse a single
+            // proposal N times — we grab a fresh proposal for each contract in
+            // the batch just before sending it. This keeps entries as close to
+            // simultaneous as the proposal stream allows.
+            if (this.is_proposal_subscription_required) {
+                const tradePromises = [];
+
+                for (let i = 0; i < numContracts; i++) {
+                    const { id, askPrice } = this.selectProposal(contract_type);
+                    tradePromises.push(
+                        api_base.api.send({ buy: id, price: askPrice }).catch(error => ({ error }))
+                    );
+                }
+
+                const results = await Promise.allSettled(tradePromises);
+                this._processBulkResults(results, contract_type);
+
+                if (!this.options.timeMachineEnabled) {
+                    this.renewProposalsOnPurchase();
+                }
+
+                return Promise.resolve();
+            }
+
+            // 🔥 Non-proposal contract types: build every request synchronously
+            // first, then fire them all in the same tick with Promise.all so
+            // Deriv receives them at (near) the exact same instant.
             const tradePromises = [];
 
-            // Build all requests FIRST (synchronously) so they're ready to fire together
             for (let i = 0; i < numContracts; i++) {
-                // Build the trade option synchronously
                 const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
-
-                // Push the promise WITHOUT awaiting it — this queues the send
                 tradePromises.push(
-                    api_base.api.send(trade_option)
+                    api_base.api.send(trade_option).catch(error => ({ error }))
                 );
             }
 
-            // 🔥 FIRE ALL AT ONCE — Promise.allSettled awaits all simultaneously
             const results = await Promise.allSettled(tradePromises);
+            this._processBulkResults(results, contract_type);
 
-            // Process each successful result
+            return Promise.resolve();
+        }
+
+        _processBulkResults(results, contract_type) {
+            this.bulkContractIds = [];
             let successCount = 0;
+
             for (let i = 0; i < results.length; i++) {
                 const result = results[i];
+                const value = result.status === 'fulfilled' ? result.value : null;
 
-                if (result.status === 'fulfilled' && result.value && result.value.buy) {
+                if (value && !value.error && value.buy) {
                     successCount++;
-                    this._handlePurchaseSuccess(result.value, contract_type);
-                } else if (result.status === 'rejected') {
-                    console.warn(`[PURCHASE] Trade #${i + 1} failed:`, result.reason);
+                    this._handlePurchaseSuccess(value, contract_type);
+                    this.bulkContractIds.push(value.buy.contract_id);
+                } else {
+                    const reason = result.status === 'rejected' ? result.reason : value?.error;
+                    console.warn(`[PURCHASE] Bulk trade #${i + 1} failed:`, reason);
                 }
             }
 
-            return Promise.resolve();
+            if (successCount === 0) {
+                // Nothing bought — surface this instead of failing silently,
+                // so the UI doesn't sit in "purchase_sent" state forever.
+                contractStatus({
+                    id: 'contract.purchase_error',
+                    data: `0/${results.length} bulk trades succeeded`,
+                });
+            }
         }
 
         _executeSinglePurchase(contract_type) {
