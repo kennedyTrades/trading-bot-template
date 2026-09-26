@@ -9,7 +9,7 @@ window.Blockly.Blocks.purchase = {
         // Ensure one of this type per statement-stack
         this.setNextStatement(false);
     },
-    definition() {
+        definition() {
         return {
             message0: localize('Purchase {{ contract_type }}', { contract_type: '%1' }),
             args0: [
@@ -30,8 +30,19 @@ window.Blockly.Blocks.purchase = {
                     ],
                 },
             ],
-            message2: 'Number of contracts: %1',
+            message2: 'Sequential trades: %1',
             args2: [
+                {
+                    type: 'field_dropdown',
+                    name: 'SEQUENTIAL_TRADES',
+                    options: [
+                        ['Disabled', 'DISABLED'],
+                        ['Enabled', 'ENABLED'],
+                    ],
+                },
+            ],
+            message3: 'Number of contracts: %1',
+            args3: [
                 {
                     type: 'field_number',
                     name: 'NUM_CONTRACTS',
@@ -48,7 +59,7 @@ window.Blockly.Blocks.purchase = {
             tooltip: localize('This block purchases contract of a specified type.'),
             category: window.Blockly.Categories.Before_Purchase,
         };
-    },
+    }
     meta() {
         return {
             display_name: localize('Purchase'),
@@ -105,11 +116,12 @@ window.Blockly.Blocks.purchase = {
     restricted_parents: ['before_purchase'],
 };
 
-window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
+ window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
     const purchaseList = block.getFieldValue('PURCHASE_LIST');
     const bulkTrades = block.getFieldValue('BULK_TRADES') || 'DISABLED';
+    const sequentialTrades = block.getFieldValue('SEQUENTIAL_TRADES') || 'DISABLED';
     const numContracts = block.getFieldValue('NUM_CONTRACTS') || 1;
 
-    const code = `Bot.purchase('${purchaseList}', { bulk: '${bulkTrades}', count: ${numContracts} });\n`;
+    const code = `Bot.purchase('${purchaseList}', { bulk: '${bulkTrades}', sequential: '${sequentialTrades}', count: ${numContracts} });\n`;
     return code;
 };
