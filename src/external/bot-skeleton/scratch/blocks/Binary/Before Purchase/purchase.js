@@ -1,213 +1,127 @@
- import { LogTypes } from '../../../constants/messages';
-import { api_base } from '../../api/api-base';
-import { contractStatus, info, log } from '../utils/broadcast';
-import { doUntilDone, getUUID, recoverFromError, tradeOptionToBuy } from '../utils/helpers';
-import { purchaseSuccessful } from './state/actions';
-import { BEFORE_PURCHASE } from './state/constants';
+ import { localize } from '@deriv-com/translations';
+import { getContractTypeOptions } from '../../../shared';
+import { excludeOptionFromContextMenu, modifyContextMenu } from '../../../utils';
 
-let delayIndex = 0;
-let purchase_reference;
+window.Blockly.Blocks.purchase = {
+    init() {
+        this.jsonInit(this.definition());
 
-export default Engine =>
-    class Purchase extends Engine {
-        async purchase(contract_type, options = {}) {
-            // Prevent calling purchase twice
-            if (this.store.getState().scope !== BEFORE_PURCHASE) {
-                return Promise.resolve();
-            }
-
-            // ── BULK TRADES: Determine how many contracts to fire ──
-            const bulkEnabled = options.bulk === 'ENABLED';
-            const numContracts = bulkEnabled ? Math.max(1, Number(options.count) || 1) : 1;
-
-            if (numContracts <= 1) {
-                return this._executeSinglePurchase(contract_type);
-            }
-
-            // ═══════════════════════════════════════════════════════════
-            //  BULK PATH — Sequential firing
-            //  Deriv's API does NOT accept parallel buy calls for the
-            //  same contract type. We MUST fire them one at a time and
-            //  await each response before firing the next.
-            // ═══════════════════════════════════════════════════════════
-
-            this.isSold = false;
-
-            // Broadcast once at the start so the UI shows "purchase sent"
-            contractStatus({
-                id: 'contract.purchase_sent',
-                data: this.tradeOptions.amount * numContracts,
-            });
-
-            let successCount = 0;
-            const purchaseResponses = [];
-
-            for (let i = 0; i < numContracts; i++) {
-                try {
-                    // Build the trade option fresh for each iteration
-                    const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
-
-                    // Fire ONE request and wait for the response
-                    const response = await api_base.api.send(trade_option);
-
-                    if (response && response.buy && response.buy.contract_id) {
-                        // Register this contract with the store
-                        this.contractId = response.buy.contract_id;
-
-                        // Broadcast this individual purchase
-                        contractStatus({
-                            id: 'contract.purchase_received',
-                            data: response.buy.transaction_id,
-                            buy: response.buy,
-                        });
-
-                        // Log this specific trade
-                        log(LogTypes.PURCHASE, { transaction_id: response.buy.transaction_id });
-                        info({
-                            accountID: this.accountInfo.loginid,
-                            totalRuns: this.updateAndReturnTotalRuns(),
-                            transaction_ids: { buy: response.buy.transaction_id },
-                            contract_type,
-                            buy_price: response.buy.buy_price,
-                        });
-
-                        purchaseResponses.push(response.buy);
-                        successCount++;
-
-                        console.log(
-                            `[BULK] Contract ${i + 1}/${numContracts} purchased — ` +
-                            `ID ${response.buy.contract_id}, price ${response.buy.buy_price}`
-                        );
-                    } else {
-                        console.warn(`[BULK] Contract ${i + 1}/${numContracts} — invalid response:`, response);
-                    }
-                } catch (err) {
-                    console.warn(`[BULK] Contract ${i + 1}/${numContracts} failed:`, err);
-                    // Continue to next contract — don't abort the whole batch
-                }
-            }
-
-            // After all contracts fired, mark the purchase as complete
-            if (successCount > 0) {
-                this.store.dispatch(purchaseSuccessful());
-            }
-
-            if (this.is_proposal_subscription_required) {
-                this.renewProposalsOnPurchase();
-            }
-
-            console.log(`[BULK] Total purchased: ${successCount}/${numContracts}`);
-
-            return Promise.resolve();
-        }
-
-        _executeSinglePurchase(contract_type) {
-            // ── Single trade path (unchanged from template) ──
-            if (this.is_proposal_subscription_required) {
-                const { id, askPrice } = this.selectProposal(contract_type);
-
-                const action = () => api_base.api.send({ buy: id, price: askPrice });
-
-                this.isSold = false;
-
-                contractStatus({
-                    id: 'contract.purchase_sent',
-                    data: askPrice,
-                });
-
-                if (!this.options.timeMachineEnabled) {
-                    return doUntilDone(action).then(response => this._handlePurchaseSuccess(response, contract_type));
-                }
-
-                return recoverFromError(
-                    action,
-                    (errorCode, makeDelay) => {
-                        if (errorCode !== 'DisconnectError') {
-                            this.renewProposalsOnPurchase();
-                        } else {
-                            this.clearProposals();
-                        }
-
-                        const unsubscribe = this.store.subscribe(() => {
-                            const { scope, proposalsReady } = this.store.getState();
-                            if (scope === BEFORE_PURCHASE && proposalsReady) {
-                                makeDelay().then(() => this.observer.emit('REVERT', 'before'));
-                                unsubscribe();
-                            }
-                        });
-                    },
-                    ['PriceMoved', 'InvalidContractProposal'],
-                    delayIndex++
-                ).then(response => this._handlePurchaseSuccess(response, contract_type));
-            }
-
-            const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
-            const action = () => api_base.api.send(trade_option);
-
-            this.isSold = false;
-
-            contractStatus({
-                id: 'contract.purchase_sent',
-                data: this.tradeOptions.amount,
-            });
-
-            if (!this.options.timeMachineEnabled) {
-                return doUntilDone(action).then(response => this._handlePurchaseSuccess(response, contract_type));
-            }
-
-            return recoverFromError(
-                action,
-                (errorCode, makeDelay) => {
-                    if (errorCode === 'DisconnectError') {
-                        this.clearProposals();
-                    }
-                    const unsubscribe = this.store.subscribe(() => {
-                        const { scope } = this.store.getState();
-                        if (scope === BEFORE_PURCHASE) {
-                            makeDelay().then(() => this.observer.emit('REVERT', 'before'));
-                            unsubscribe();
-                        }
-                    });
+        // Ensure one of this type per statement-stack
+        this.setNextStatement(false);
+    },
+    definition() {
+        return {
+            message0: localize('Purchase {{ contract_type }}', { contract_type: '%1' }),
+            args0: [
+                {
+                    type: 'field_dropdown',
+                    name: 'PURCHASE_LIST',
+                    options: [['', '']],
                 },
-                ['PriceMoved', 'InvalidContractProposal'],
-                delayIndex++
-            ).then(response => this._handlePurchaseSuccess(response, contract_type));
-        }
-
-        _handlePurchaseSuccess(response, contract_type) {
-            const buy = response.buy || response;
-
-            if (!buy || !buy.contract_id) {
-                console.warn('[PURCHASE] Invalid response:', response);
-                return;
-            }
-
-            contractStatus({
-                id: 'contract.purchase_received',
-                data: buy.transaction_id,
-                buy,
-            });
-
-            this.contractId = buy.contract_id;
-            this.store.dispatch(purchaseSuccessful());
-
-            if (this.is_proposal_subscription_required) {
-                this.renewProposalsOnPurchase();
-            }
-
-            delayIndex = 0;
-            log(LogTypes.PURCHASE, { transaction_id: buy.transaction_id });
-            info({
-                accountID: this.accountInfo.loginid,
-                totalRuns: this.updateAndReturnTotalRuns(),
-                transaction_ids: { buy: buy.transaction_id },
-                contract_type,
-                buy_price: buy.buy_price,
-            });
-        }
-
-        getPurchaseReference = () => purchase_reference;
-        regeneratePurchaseReference = () => {
-            purchase_reference = getUUID();
+            ],
+            message1: 'Bulk trades: %1',
+            args1: [
+                {
+                    type: 'field_dropdown',
+                    name: 'BULK_TRADES',
+                    options: [
+                        ['Disabled', 'DISABLED'],
+                        ['Enabled', 'ENABLED'],
+                    ],
+                },
+            ],
+            message2: 'Sequential trades: %1',
+            args2: [
+                {
+                    type: 'field_dropdown',
+                    name: 'SEQUENTIAL_TRADES',
+                    options: [
+                        ['Disabled', 'DISABLED'],
+                        ['Enabled', 'ENABLED'],
+                    ],
+                },
+            ],
+            message3: 'Number of contracts: %1',
+            args3: [
+                {
+                    type: 'field_number',
+                    name: 'NUM_CONTRACTS',
+                    value: 1,
+                    min: 1,
+                    max: 100,
+                    precision: 1,
+                },
+            ],
+            previousStatement: null,
+            colour: window.Blockly.Colours.Special1.colour,
+            colourSecondary: window.Blockly.Colours.Special1.colourSecondary,
+            colourTertiary: window.Blockly.Colours.Special1.colourTertiary,
+            tooltip: localize('This block purchases contract of a specified type.'),
+            category: window.Blockly.Categories.Before_Purchase,
         };
-    };
+    },
+    meta() {
+        return {
+            display_name: localize('Purchase'),
+            description: localize(
+                'Use this block to purchase the specific contract you want. You may add multiple Purchase blocks together with conditional blocks to define your purchase conditions. This block can only be used within the Purchase conditions block.'
+            ),
+            key_words: localize('buy'),
+        };
+    },
+    onchange(event) {
+        if (!this.workspace || window.Blockly.derivWorkspace.isFlyoutVisible || this.workspace.isDragging()) {
+            return;
+        }
+
+        if (event.type === window.Blockly.Events.BLOCK_CREATE && event.ids.includes(this.id)) {
+            this.populatePurchaseList(event);
+        } else if (event.type === window.Blockly.Events.BLOCK_CHANGE) {
+            if (event.name === 'TYPE_LIST' || event.name === 'TRADETYPE_LIST') {
+                this.populatePurchaseList(event);
+            }
+        } else if (event.type === window.Blockly.Events.BLOCK_DRAG && !event.isStart && event.blockId === this.id) {
+            const purchase_type_list = this.getField('PURCHASE_LIST');
+            const purchase_options = purchase_type_list.menuGenerator_; // eslint-disable-line
+
+            if (purchase_options[0][0] === '') {
+                this.populatePurchaseList(event);
+            }
+        }
+    },
+    populatePurchaseList(event) {
+        const trade_definition_block = this.workspace.getTradeDefinitionBlock();
+
+        if (trade_definition_block) {
+            const trade_type_block = trade_definition_block.getChildByType('trade_definition_tradetype');
+            const trade_type = trade_type_block.getFieldValue('TRADETYPE_LIST');
+            const contract_type_block = trade_definition_block.getChildByType('trade_definition_contracttype');
+            const contract_type = contract_type_block.getFieldValue('TYPE_LIST');
+            const purchase_type_list = this.getField('PURCHASE_LIST');
+            const purchase_type = purchase_type_list.getValue();
+            const contract_type_options = getContractTypeOptions(contract_type, trade_type);
+
+            purchase_type_list.updateOptions(contract_type_options, {
+                default_value: purchase_type,
+                event_group: event.group,
+                should_pretend_empty: true,
+            });
+        }
+    },
+    customContextMenu(menu) {
+        const menu_items = [localize('Enable Block'), localize('Disable Block')];
+        excludeOptionFromContextMenu(menu, menu_items);
+        modifyContextMenu(menu);
+    },
+    restricted_parents: ['before_purchase'],
+};
+
+window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
+    const purchaseList = block.getFieldValue('PURCHASE_LIST');
+    const bulkTrades = block.getFieldValue('BULK_TRADES') || 'DISABLED';
+    const sequentialTrades = block.getFieldValue('SEQUENTIAL_TRADES') || 'DISABLED';
+    const numContracts = block.getFieldValue('NUM_CONTRACTS') || 1;
+
+    const code = `Bot.purchase('${purchaseList}', { bulk: '${bulkTrades}', sequential: '${sequentialTrades}', count: ${numContracts} });\n`;
+    return code;
+};
