@@ -137,7 +137,7 @@ const Analyzer: React.FC = () => {
         // ═══════════════════════════════════════════════
         //  STRATEGY 1: MATCHES & DIFFERS
         // ═══════════════════════════════════════════════
-        if (strategyKey === 'matches_differs') {
+             if (strategyKey === 'matches_differs') {
             const rareDigits = sortedDigits.filter(d => percents[d] < RARE_THRESHOLD);
 
             if (rareDigits.length >= 2) {
@@ -147,7 +147,7 @@ const Analyzer: React.FC = () => {
                     ok: true,
                     strategy: 'Cold Digit — Matches & Differs',
                     confidence: percents[predicted] < 8.5 ? 'HIGH' : 'MEDIUM',
-                    predicted: String(predicted),
+                    predicted: `DIFFER ${predicted}`,
                     entries,
                     reason: `Digit ${predicted} at ${percents[predicted].toFixed(1)}% is the rarest. DIFFER this digit. Enter on: ${entries.join(' or ')}.`,
                 };
@@ -163,7 +163,7 @@ const Analyzer: React.FC = () => {
                         ok: true,
                         strategy: 'Single Cold Digit',
                         confidence: percents[predicted] < 8.5 ? 'MEDIUM' : 'LOW',
-                        predicted: String(predicted),
+                        predicted: `DIFFER ${predicted}`,
                         entries,
                         reason: `Digit ${predicted} at ${percents[predicted].toFixed(1)}% is the only rare digit. Enter on: ${entries.join(' or ')}.`,
                     };
