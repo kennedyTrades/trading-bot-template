@@ -30,23 +30,12 @@ window.Blockly.Blocks.purchase = {
                     ],
                 },
             ],
-            message2: 'Sequential trades: %1',
+            message2: 'Number of contracts: %1',
             args2: [
-                {
-                    type: 'field_dropdown',
-                    name: 'SEQUENTIAL_TRADES',
-                    options: [
-                        ['Disabled', 'DISABLED'],
-                        ['Enabled', 'ENABLED'],
-                    ],
-                },
-            ],
-            message3: 'Number of contracts: %1',
-            args3: [
                 {
                     type: 'field_number',
                     name: 'NUM_CONTRACTS',
-                    value: 1,
+                    value: 5,
                     min: 1,
                     max: 100,
                     precision: 1,
