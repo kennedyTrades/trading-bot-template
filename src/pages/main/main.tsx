@@ -33,7 +33,7 @@ import {
     LabelPairedChartLineCaptionRegularIcon,
     LabelPairedObjectsColumnCaptionRegularIcon,
     LabelPairedPuzzlePieceTwoCaptionBoldIcon,
-    LabelPairedMagnifyingGlassCaptionRegularIcon,
+         LabelPairedMagnifyingGlassPlusCaptionRegularIcon,
 } from '@deriv/quill-icons/LabelPaired';
 import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
@@ -367,11 +367,11 @@ const AppWrapper = observer(() => {
                  <div
     label={
         <>
-            <LabelPairedMagnifyingGlassCaptionRegularIcon
-                height='24px'
-                width='24px'
-                fill='var(--text-general)'
-            />
+          <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
+    height='24px'
+    width='24px'
+    fill='var(--text-general)'
+/>
             <Localize i18n_default_text='Scanner' />
         </>
     }
