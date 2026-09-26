@@ -9,7 +9,7 @@ window.Blockly.Blocks.purchase = {
         // Ensure one of this type per statement-stack
         this.setNextStatement(false);
     },
-        definition() {
+    definition() {
         return {
             message0: localize('Purchase {{ contract_type }}', { contract_type: '%1' }),
             args0: [
@@ -59,7 +59,7 @@ window.Blockly.Blocks.purchase = {
             tooltip: localize('This block purchases contract of a specified type.'),
             category: window.Blockly.Categories.Before_Purchase,
         };
-    }
+    },
     meta() {
         return {
             display_name: localize('Purchase'),
@@ -116,7 +116,7 @@ window.Blockly.Blocks.purchase = {
     restricted_parents: ['before_purchase'],
 };
 
- window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
+window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
     const purchaseList = block.getFieldValue('PURCHASE_LIST');
     const bulkTrades = block.getFieldValue('BULK_TRADES') || 'DISABLED';
     const sequentialTrades = block.getFieldValue('SEQUENTIAL_TRADES') || 'DISABLED';
