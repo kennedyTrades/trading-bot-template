@@ -146,8 +146,19 @@ declare global {
         };
     }
 
-    const gapi: Window['gapi'];
+        const gapi: Window['gapi'];
     const google: Window['google'];
+}
+
+// SCSS and CSS module declarations — allows importing styles without type errors
+declare module '*.scss' {
+    const content: { [className: string]: string };
+    export default content;
+}
+
+declare module '*.css' {
+    const content: { [className: string]: string };
+    export default content;
 }
 
 export {};
