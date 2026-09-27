@@ -29,11 +29,11 @@ import {
     resetUrlParamProcessing,
     setModalStateChangeCallback,
 } from '@/utils/trade-type-modal-handler';
- import {
+import {
     LabelPairedChartLineCaptionRegularIcon,
     LabelPairedObjectsColumnCaptionRegularIcon,
     LabelPairedPuzzlePieceTwoCaptionBoldIcon,
-         LabelPairedMagnifyingGlassPlusCaptionRegularIcon,
+    LabelPairedMagnifyingGlassPlusCaptionRegularIcon,
 } from '@deriv/quill-icons/LabelPaired';
 import { LegacyGuide1pxIcon } from '@deriv/quill-icons/Legacy';
 import { Localize, localize } from '@deriv-com/translations';
@@ -42,12 +42,12 @@ import RunPanel from '../../components/run-panel';
 import ChartModal from '../chart/chart-modal';
 import Dashboard from '../dashboard';
 import RunStrategy from '../dashboard/run-strategy';
+// @ts-ignore
 import './main.scss';
 
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 const Tutorial = lazy(() => import('../tutorials'));
 const Analyzer = lazy(() => import('../analyzer'));
-const RiskCalculator = lazy(() => import('../risk-calculator'));
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
@@ -74,13 +74,20 @@ const AppWrapper = observer(() => {
         stopBot,
     } = run_panel;
     const { is_open } = quick_strategy;
-    const { cancel_button_text, ok_button_text, title, message, dismissable, is_closed_on_cancel } = dialog_options as {
-        [key: string]: string;
+    const {
+        cancel_button_text,
+        ok_button_text,
+        title,
+        message,
+        dismissable,
+        is_closed_on_cancel,
+    } = dialog_options as {
+        [key: string]: string | boolean | undefined;
     };
     const { clear } = summary_card;
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
-    const hash = ['dashboard', 'bot_builder', 'analyzer', 'chart', 'tutorial', 'risk_calculator'];
+    const hash = ['dashboard', 'bot_builder', 'analyzer', 'chart', 'tutorial'];
     const { isDesktop } = useDevice();
     const location = useLocation();
     const navigate = useNavigate();
@@ -135,10 +142,7 @@ const AppWrapper = observer(() => {
                 }
                 setLeftTabShadow(true);
             },
-            {
-                root: null,
-                threshold: 0.5,
-            }
+            { root: null, threshold: 0.5 }
         );
 
         const observer_tutorial = new window.IntersectionObserver(
@@ -149,14 +153,17 @@ const AppWrapper = observer(() => {
                 }
                 setRightTabShadow(true);
             },
-            {
-                root: null,
-                threshold: 0.5,
-            }
+            { root: null, threshold: 0.5 }
         );
-        observer_dashboard.observe(el_dashboard);
-        observer_tutorial.observe(el_tutorial);
-    });
+
+        if (el_dashboard) observer_dashboard.observe(el_dashboard);
+        if (el_tutorial) observer_tutorial.observe(el_tutorial);
+
+        return () => {
+            if (el_dashboard) observer_dashboard.unobserve(el_dashboard);
+            if (el_tutorial) observer_tutorial.unobserve(el_tutorial);
+        };
+    }, []);
 
     React.useEffect(() => {
         if (connectionStatus !== CONNECTION_STATUS.OPENED) {
@@ -271,7 +278,8 @@ const AppWrapper = observer(() => {
 
     React.useEffect(() => {
         const trashcan_init_id = setTimeout(() => {
-            if (active_tab === BOT_BUILDER && Blockly?.derivWorkspace?.trashcan) {
+            const blocklyWorkspace = (Blockly as any)?.derivWorkspace;
+            if (active_tab === BOT_BUILDER && blocklyWorkspace?.trashcan) {
                 const trashcanY = window.innerHeight - 250;
                 let trashcanX;
                 if (is_drawer_open) {
@@ -279,7 +287,7 @@ const AppWrapper = observer(() => {
                 } else {
                     trashcanX = isDbotRTL() ? 20 : window.innerWidth - 100;
                 }
-                Blockly?.derivWorkspace?.trashcan?.setTrashcanPosition(trashcanX, trashcanY);
+                blocklyWorkspace.trashcan.setTrashcanPosition(trashcanX, trashcanY);
             }
         }, 100);
 
@@ -316,7 +324,6 @@ const AppWrapper = observer(() => {
         [active_tab]
     );
 
-    // [AI]
     const handleLoginGeneration = async () => {
         const oauthUrl = await generateOAuthURL();
         if (oauthUrl) {
@@ -325,7 +332,7 @@ const AppWrapper = observer(() => {
             console.error('Failed to generate OAuth URL');
         }
     };
-    // [/AI]
+
     return (
         <React.Fragment>
             <div className='main'>
@@ -335,8 +342,14 @@ const AppWrapper = observer(() => {
                     })}
                 >
                     <div>
-                        {!isDesktop && left_tab_shadow && <span className='tabs-shadow tabs-shadow--left' />}{' '}
-                        <Tabs active_index={active_tab} className='main__tabs' onTabItemClick={handleTabChange} top>
+                        {!isDesktop && left_tab_shadow && <span className='tabs-shadow tabs-shadow--left' />}
+                        <Tabs
+                            active_index={active_tab}
+                            className='main__tabs'
+                            onTabItemClick={handleTabChange}
+                            top
+                            history={window.history}
+                        >
                             <div
                                 label={
                                     <>
@@ -365,19 +378,19 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-bot-builder'
                             />
-                 <div
-    label={
-        <>
-          <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
-    height='24px'
-    width='24px'
-    fill='var(--text-general)'
-/>
-            <Localize i18n_default_text='Scanner' />
-        </>
-    }
-    id='id-analyzer'
->
+                            <div
+                                label={
+                                    <>
+                                        <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Scanner' />
+                                    </>
+                                }
+                                id='id-analyzer'
+                            >
                                 <Suspense
                                     fallback={
                                         <ChunkLoader message={localize('Please wait, loading analyzer...')} />
@@ -433,29 +446,8 @@ const AppWrapper = observer(() => {
                                     </Suspense>
                                 </div>
                             </div>
-                                                        <div
-                                label={
-                                    <>
-                                        <LabelPairedChartLineCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Risk Calculator' />
-                                    </>
-                                }
-                                id='id-risk-calculator'
-                            >
-                                <Suspense
-                                    fallback={
-                                        <ChunkLoader message={localize('Please wait, loading...')} />
-                                    }
-                                >
-                                    <RiskCalculator />
-                                </Suspense>
-                            </div>
                         </Tabs>
-                        {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}{' '}
+                        {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}
                     </div>
                 </div>
             </div>
@@ -469,20 +461,20 @@ const AppWrapper = observer(() => {
             </DesktopWrapper>
             <MobileWrapper>{!is_open && <RunPanel />}</MobileWrapper>
             <Dialog
-                cancel_button_text={cancel_button_text || localize('Cancel')}
+                cancel_button_text={cancel_button_text ? String(cancel_button_text) : localize('Cancel')}
+                confirm_button_text={ok_button_text ? String(ok_button_text) : localize('Ok')}
                 className='dc-dialog__wrapper--fixed'
-                confirm_button_text={ok_button_text || localize('Ok')}
                 has_close_icon
                 is_mobile_full_width={false}
                 is_visible={is_dialog_open}
-                onCancel={onCancelButtonClick}
+                onCancel={onCancelButtonClick || undefined}
                 onClose={onCloseDialog}
                 onConfirm={onOkButtonClick || onCloseDialog}
                 portal_element_id='modal_root'
                 title={title}
                 login={handleLoginGeneration}
-                dismissable={dismissable}
-                is_closed_on_cancel={is_closed_on_cancel}
+                dismissable={Boolean(dismissable)}
+                is_closed_on_cancel={Boolean(is_closed_on_cancel)}
             >
                 {message}
             </Dialog>
