@@ -1,3 +1,3 @@
-import BulkTrader from './bulk-trader';
+ import BulkTrader from './bulk-trader';
 
 export default BulkTrader;
