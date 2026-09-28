@@ -1,4 +1,4 @@
- import { LogTypes } from '../../../constants/messages';
+  import { LogTypes } from '../../../constants/messages';
 import { api_base } from '../../api/api-base';
 import { contractStatus, info, log } from '../utils/broadcast';
 import { doUntilDone, getUUID, recoverFromError, tradeOptionToBuy } from '../utils/helpers';
@@ -25,41 +25,43 @@ export default Engine =>
             }
 
             // ═══════════════════════════════════════════════════════════
-            //  BULK PATH — Simultaneous Concurrent Firing
-            //  Sends all buy requests in parallel over the WebSocket.
+            //  BULK PATH — Sequential firing
+            //  Deriv's API does NOT accept parallel buy calls for the
+            //  same contract type. We MUST fire them one at a time and
+            //  await each response before firing the next.
             // ═══════════════════════════════════════════════════════════
 
             this.isSold = false;
 
-            // Broadcast initial status update
+            // Broadcast once at the start so the UI shows "purchase sent"
             contractStatus({
                 id: 'contract.purchase_sent',
                 data: this.tradeOptions.amount * numContracts,
             });
 
-            // Create array of simultaneous API promises
-            const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
-            const sendPromises = Array.from({ length: numContracts }, () => 
-                api_base.api.send(trade_option)
-            );
-
-            // Dispatch all purchase requests concurrently
-            const results = await Promise.allSettled(sendPromises);
-
             let successCount = 0;
+            const purchaseResponses = [];
 
-            results.forEach((result, index) => {
-                if (result.status === 'fulfilled') {
-                    const response = result.value;
+            for (let i = 0; i < numContracts; i++) {
+                try {
+                    // Build the trade option fresh for each iteration
+                    const trade_option = tradeOptionToBuy(contract_type, this.tradeOptions);
+
+                    // Fire ONE request and wait for the response
+                    const response = await api_base.api.send(trade_option);
+
                     if (response && response.buy && response.buy.contract_id) {
+                        // Register this contract with the store
                         this.contractId = response.buy.contract_id;
 
+                        // Broadcast this individual purchase
                         contractStatus({
                             id: 'contract.purchase_received',
                             data: response.buy.transaction_id,
                             buy: response.buy,
                         });
 
+                        // Log this specific trade
                         log(LogTypes.PURCHASE, { transaction_id: response.buy.transaction_id });
                         info({
                             accountID: this.accountInfo.loginid,
@@ -69,17 +71,23 @@ export default Engine =>
                             buy_price: response.buy.buy_price,
                         });
 
+                        purchaseResponses.push(response.buy);
                         successCount++;
+
                         console.log(
-                            `[BULK SIMULTANEOUS] Contract ${index + 1}/${numContracts} purchased — ` +
+                            `[BULK] Contract ${i + 1}/${numContracts} purchased — ` +
                             `ID ${response.buy.contract_id}, price ${response.buy.buy_price}`
                         );
+                    } else {
+                        console.warn(`[BULK] Contract ${i + 1}/${numContracts} — invalid response:`, response);
                     }
-                } else {
-                    console.warn(`[BULK SIMULTANEOUS] Contract ${index + 1}/${numContracts} failed:`, result.reason);
+                } catch (err) {
+                    console.warn(`[BULK] Contract ${i + 1}/${numContracts} failed:`, err);
+                    // Continue to next contract — don't abort the whole batch
                 }
-            });
+            }
 
+            // After all contracts fired, mark the purchase as complete
             if (successCount > 0) {
                 this.store.dispatch(purchaseSuccessful());
             }
@@ -88,7 +96,7 @@ export default Engine =>
                 this.renewProposalsOnPurchase();
             }
 
-            console.log(`[BULK] Total executed simultaneously: ${successCount}/${numContracts}`);
+            console.log(`[BULK] Total purchased: ${successCount}/${numContracts}`);
 
             return Promise.resolve();
         }
