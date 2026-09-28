@@ -5,8 +5,6 @@ import { excludeOptionFromContextMenu, modifyContextMenu } from '../../../utils'
 window.Blockly.Blocks.purchase = {
     init() {
         this.jsonInit(this.definition());
-
-        // Ensure one of this type per statement-stack
         this.setNextStatement(false);
     },
     definition() {
@@ -53,7 +51,7 @@ window.Blockly.Blocks.purchase = {
         return {
             display_name: localize('Purchase'),
             description: localize(
-                'Use this block to purchase the specific contract you want. You may add multiple Purchase blocks together with conditional blocks to define your purchase conditions. This block can only be used within the Purchase conditions block.'
+                'Use this block to purchase the specific contract you want. You may add multiple Purchase blocks together with conditional blocks to define your purchase conditions.'
             ),
             key_words: localize('buy'),
         };
@@ -71,7 +69,7 @@ window.Blockly.Blocks.purchase = {
             }
         } else if (event.type === window.Blockly.Events.BLOCK_DRAG && !event.isStart && event.blockId === this.id) {
             const purchase_type_list = this.getField('PURCHASE_LIST');
-            const purchase_options = purchase_type_list.menuGenerator_; // eslint-disable-line
+            const purchase_options = purchase_type_list.menuGenerator_;
 
             if (purchase_options[0][0] === '') {
                 this.populatePurchaseList(event);
@@ -108,9 +106,9 @@ window.Blockly.Blocks.purchase = {
 window.Blockly.JavaScript.javascriptGenerator.forBlock.purchase = block => {
     const purchaseList = block.getFieldValue('PURCHASE_LIST');
     const bulkTrades = block.getFieldValue('BULK_TRADES') || 'DISABLED';
-    const sequentialTrades = block.getFieldValue('SEQUENTIAL_TRADES') || 'DISABLED';
-    const numContracts = block.getFieldValue('NUM_CONTRACTS') || 1;
+    const numContracts = parseInt(block.getFieldValue('NUM_CONTRACTS'), 10) || 1;
 
-    const code = `Bot.purchase('${purchaseList}', { bulk: '${bulkTrades}', sequential: '${sequentialTrades}', count: ${numContracts} });\n`;
+    // Generated JS code passing options object to Bot.purchase
+    const code = `Bot.purchase('${purchaseList}', { bulk: '${bulkTrades}', count: ${numContracts} });\n`;
     return code;
 };
