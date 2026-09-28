@@ -88,7 +88,7 @@ const AppWrapper = observer(() => {
     const { clear } = summary_card;
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
-    const hash = ['dashboard', 'bot_builder', 'bulk_trader', 'freebots', 'dtrader', 'hedging', 'chart', 'analyzer'];
+    const hash = ['dashboard', 'bot_builder', 'bulk_trader', 'freebots', 'dtrader', 'hedging', 'more', 'chart', 'analyzer'];
     const { isDesktop } = useDevice();
     const location = useLocation();
     const navigate = useNavigate();
@@ -315,7 +315,7 @@ const AppWrapper = observer(() => {
             setActiveTab(tab_index);
             const el_id = TAB_IDS[tab_index];
             if (el_id) {
-                const el_tab = document.getElementById(el_id);
+                const el_tab = document.getElementById(typeof el_id === 'string' ? el_id : el_id.id);
                 setTimeout(() => {
                     el_tab?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
                 }, 10);
@@ -362,7 +362,7 @@ const AppWrapper = observer(() => {
                                         <Localize i18n_default_text='Dashboard' />
                                     </>
                                 }
-                                id='id-dbot-dashboard'
+                                id='id-dashboard'
                             >
                                 <Dashboard handleTabChange={handleTabChange} />
                             </div>
@@ -403,24 +403,55 @@ const AppWrapper = observer(() => {
                             <div
                                 label={
                                     <>
-                                        <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
+                                        <LegacyGuide1pxIcon
+                                            height='16px'
+                                            width='16px'
                                             fill='var(--text-general)'
                                         />
-                                        <Localize i18n_default_text='Scanner' />
+                                        <Localize i18n_default_text='Freebots & strategies' />
                                     </>
                                 }
-                                id='id-analyzer'
-                            >
-                                <Suspense
-                                    fallback={
-                                        <ChunkLoader message={localize('Please wait, loading analyzer...')} />
-                                    }
-                                >
-                                    <Analyzer />
-                                </Suspense>
-                            </div>
+                                id='id-freebots'
+                            />
+                            <div
+                                label={
+                                    <>
+                                        <LegacyGuide1pxIcon
+                                            height='16px'
+                                            width='16px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Dtrader/circles' />
+                                    </>
+                                }
+                                id='id-dtrader'
+                            />
+                            <div
+                                label={
+                                    <>
+                                        <LegacyGuide1pxIcon
+                                            height='16px'
+                                            width='16px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Hedging Beast' />
+                                    </>
+                                }
+                                id='id-hedging'
+                            />
+                            <div
+                                label={
+                                    <>
+                                        <LegacyGuide1pxIcon
+                                            height='16px'
+                                            width='16px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='More' />
+                                    </>
+                                }
+                                id='id-more'
+                            />
                             <div
                                 label={
                                     <>
@@ -447,26 +478,23 @@ const AppWrapper = observer(() => {
                             <div
                                 label={
                                     <>
-                                        <LegacyGuide1pxIcon
-                                            height='16px'
-                                            width='16px'
+                                        <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
                                             fill='var(--text-general)'
-                                            className='icon-general-fill-g-path'
                                         />
-                                        <Localize i18n_default_text='Tutorials' />
+                                        <Localize i18n_default_text='Analysis tool' />
                                     </>
                                 }
-                                id='id-tutorials'
+                                id='id-analyzer'
                             >
-                                <div className='tutorials-wrapper'>
-                                    <Suspense
-                                        fallback={
-                                            <ChunkLoader message={localize('Please wait, loading tutorials...')} />
-                                        }
-                                    >
-                                        <Tutorial handleTabChange={handleTabChange} />
-                                    </Suspense>
-                                </div>
+                                <Suspense
+                                    fallback={
+                                        <ChunkLoader message={localize('Please wait, loading analyzer...')} />
+                                    }
+                                >
+                                    <Analyzer />
+                                </Suspense>
                             </div>
                         </Tabs>
                         {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}
