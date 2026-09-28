@@ -412,7 +412,15 @@ const AppWrapper = observer(() => {
                                     </>
                                 }
                                 id='id-freebots'
-                            />
+                            >
+                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
+                                    <iframe
+                                        src='https://botblitz.org/#freebots'
+                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                        title='Freebots'
+                                    />
+                                </div>
+                            </div>
                             <div
                                 label={
                                     <>
@@ -425,7 +433,15 @@ const AppWrapper = observer(() => {
                                     </>
                                 }
                                 id='id-dtrader'
-                            />
+                            >
+                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
+                                    <iframe
+                                        src='https://botblitz.org/#dtrader'
+                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                        title='Dtrader'
+                                    />
+                                </div>
+                            </div>
                             <div
                                 label={
                                     <>
@@ -438,7 +454,15 @@ const AppWrapper = observer(() => {
                                     </>
                                 }
                                 id='id-hedging'
-                            />
+                            >
+                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
+                                    <iframe
+                                        src='https://botblitz.org/#hedging'
+                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                        title='Hedging'
+                                    />
+                                </div>
+                            </div>
                             <div
                                 label={
                                     <>
@@ -451,7 +475,15 @@ const AppWrapper = observer(() => {
                                     </>
                                 }
                                 id='id-more'
-                            />
+                            >
+                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
+                                    <iframe
+                                        src='https://botblitz.org/#more'
+                                        style={{ width: '100%', height: '100%', border: 'none' }}
+                                        title='More'
+                                    />
+                                </div>
+                            </div>
                             <div
                                 label={
                                     <>
