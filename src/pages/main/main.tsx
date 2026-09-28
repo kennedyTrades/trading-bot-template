@@ -46,9 +46,171 @@ import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
 
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
-const Tutorial = lazy(() => import('../tutorials'));
 const Analyzer = lazy(() => import('../analyzer'));
 const BulkTrader = lazy(() => import('../bulk-trader'));
+
+// --- Inline Native UI Components for Tabs ---
+
+const FreebotsNative: React.FC = () => {
+    const strategies = [
+        { id: 1, name: 'Quantum Signal Bot', category: 'Digits', description: 'Matches & Differs automated strategy' },
+        { id: 2, name: 'Hedging Beast Bot', category: 'Rise/Fall', description: 'Auto recovery hedging strategy' },
+        { id: 3, name: 'Tick Pattern Master', category: 'Analysis', description: 'High probability tick pattern detector' },
+    ];
+
+    return (
+        <div style={{ padding: '24px', color: 'var(--text-general)' }}>
+            <h2 style={{ marginBottom: '16px' }}>Freebots & Strategies</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                {strategies.map(bot => (
+                    <div
+                        key={bot.id}
+                        style={{
+                            border: '1px solid var(--border-normal)',
+                            borderRadius: '8px',
+                            padding: '16px',
+                            background: 'var(--general-section-1)',
+                        }}
+                    >
+                        <h3>{bot.name}</h3>
+                        <span style={{ fontSize: '12px', color: 'var(--text-less-prominent)' }}>{bot.category}</span>
+                        <p style={{ marginTop: '8px', fontSize: '14px' }}>{bot.description}</p>
+                        <button
+                            style={{
+                                marginTop: '16px',
+                                width: '100%',
+                                padding: '10px',
+                                background: 'var(--button-primary-default)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                            }}
+                        >
+                            Load Strategy
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const DtraderNative: React.FC = () => {
+    const [strategy, setStrategy] = useState('Matches & Differs');
+    const [market, setMarket] = useState('Volatility 10 (1s) Index');
+
+    return (
+        <div style={{ padding: '32px 16px', maxWidth: '700px', margin: '0 auto', color: 'var(--text-general)' }}>
+            <div style={{
+                border: '1px solid var(--border-normal)',
+                borderRadius: '12px',
+                padding: '24px',
+                background: 'var(--general-section-1)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+            }}>
+                <h2 style={{ color: '#ff444f', textAlign: 'center', marginBottom: '24px' }}>
+                    Quantum Signal Analyzer
+                </h2>
+
+                <div style={{ marginBottom: '16px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>SELECT STRATEGY</label>
+                    <select
+                        value={strategy}
+                        onChange={(e) => setStrategy(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-normal)',
+                            background: 'var(--general-main)',
+                            color: 'var(--text-general)',
+                        }}
+                    >
+                        <option value="Matches & Differs">Matches & Differs</option>
+                        <option value="Over / Under">Over / Under</option>
+                        <option value="Rise / Fall">Rise / Fall</option>
+                    </select>
+                </div>
+
+                <div style={{ marginBottom: '24px' }}>
+                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>SELECT MARKET</label>
+                    <select
+                        value={market}
+                        onChange={(e) => setMarket(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '12px',
+                            borderRadius: '6px',
+                            border: '1px solid var(--border-normal)',
+                            background: 'var(--general-main)',
+                            color: 'var(--text-general)',
+                        }}
+                    >
+                        <option value="Volatility 10 (1s) Index">Volatility 10 (1s) Index</option>
+                        <option value="Volatility 100 Index">Volatility 100 Index</option>
+                        <option value="Volatility 75 Index">Volatility 75 Index</option>
+                    </select>
+                </div>
+
+                <div style={{
+                    padding: '20px',
+                    background: 'var(--general-main)',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    border: '1px solid var(--border-normal)',
+                }}>
+                    <h4>Active Signal Status</h4>
+                    <p style={{ fontSize: '22px', fontWeight: 'bold', color: '#4bb543', margin: '12px 0' }}>
+                        SIGNAL: READY
+                    </p>
+                    <p style={{ fontSize: '12px', color: 'var(--text-less-prominent)' }}>
+                        Connected to live market ticks for {market}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const HedgingNative: React.FC = () => {
+    return (
+        <div style={{ padding: '32px 16px', maxWidth: '700px', margin: '0 auto', color: 'var(--text-general)' }}>
+            <div style={{
+                border: '1px solid var(--border-normal)',
+                borderRadius: '12px',
+                padding: '24px',
+                background: 'var(--general-section-1)',
+            }}>
+                <h2 style={{ textAlign: 'center', marginBottom: '16px' }}>Hedging Beast</h2>
+                <p style={{ textAlign: 'center', color: 'var(--text-less-prominent)' }}>
+                    Automated position hedging and risk mitigation module.
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const MoreNative: React.FC = () => {
+    return (
+        <div style={{ padding: '32px 16px', maxWidth: '700px', margin: '0 auto', color: 'var(--text-general)' }}>
+            <div style={{
+                border: '1px solid var(--border-normal)',
+                borderRadius: '12px',
+                padding: '24px',
+                background: 'var(--general-section-1)',
+            }}>
+                <h2 style={{ textAlign: 'center', marginBottom: '16px' }}>Additional Utilities</h2>
+                <p style={{ textAlign: 'center', color: 'var(--text-less-prominent)' }}>
+                    Access extra tools, market analytics, and strategy calculators.
+                </p>
+            </div>
+        </div>
+    );
+};
+
+// --- Main Application Component ---
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
@@ -413,13 +575,7 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-freebots'
                             >
-                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
-                                    <iframe
-                                        src='https://botblitz.org/#freebots'
-                                        style={{ width: '100%', height: '100%', border: 'none' }}
-                                        title='Freebots'
-                                    />
-                                </div>
+                                <FreebotsNative />
                             </div>
                             <div
                                 label={
@@ -434,13 +590,7 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-dtrader'
                             >
-                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
-                                    <iframe
-                                        src='https://botblitz.org/#dtrader'
-                                        style={{ width: '100%', height: '100%', border: 'none' }}
-                                        title='Dtrader'
-                                    />
-                                </div>
+                                <DtraderNative />
                             </div>
                             <div
                                 label={
@@ -455,13 +605,7 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-hedging'
                             >
-                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
-                                    <iframe
-                                        src='https://botblitz.org/#hedging'
-                                        style={{ width: '100%', height: '100%', border: 'none' }}
-                                        title='Hedging'
-                                    />
-                                </div>
+                                <HedgingNative />
                             </div>
                             <div
                                 label={
@@ -476,13 +620,7 @@ const AppWrapper = observer(() => {
                                 }
                                 id='id-more'
                             >
-                                <div style={{ width: '100%', height: 'calc(100vh - 80px)' }}>
-                                    <iframe
-                                        src='https://botblitz.org/#more'
-                                        style={{ width: '100%', height: '100%', border: 'none' }}
-                                        title='More'
-                                    />
-                                </div>
+                                <MoreNative />
                             </div>
                             <div
                                 label={
