@@ -37,12 +37,23 @@ export default defineConfig({
         alias: {
             react: path.resolve('./node_modules/react'),
             'react-dom': path.resolve('./node_modules/react-dom'),
+            
+            // Existing @/ aliases
             '@/external': path.resolve(__dirname, './src/external'),
             '@/components': path.resolve(__dirname, './src/components'),
             '@/hooks': path.resolve(__dirname, './src/hooks'),
             '@/utils': path.resolve(__dirname, './src/utils'),
             '@/constants': path.resolve(__dirname, './src/constants'),
             '@/stores': path.resolve(__dirname, './src/stores'),
+
+            // ⬇️ NEW ALIASES TO FIX VERCEL SCSS ERRORS ⬇️
+            'components': path.resolve(__dirname, './src/components'),
+            'external': path.resolve(__dirname, './src/external'),
+            'hooks': path.resolve(__dirname, './src/hooks'),
+            'utils': path.resolve(__dirname, './src/utils'),
+            'constants': path.resolve(__dirname, './src/constants'),
+            'stores': path.resolve(__dirname, './src/stores'),
+            'styles': path.resolve(__dirname, './src/styles'),
         },
     },
     output: {

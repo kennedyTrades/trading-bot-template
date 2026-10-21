@@ -48,7 +48,7 @@ import './main.scss';
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
 const Analyzer = lazy(() => import('../analyzer'));
 const BulkTrader = lazy(() => import('../bulk-trader'));
-const SignalAnalyzer = lazy(() => import('@/signal-analyzer'));
+const SignalAnalyzer = lazy(() => import('@/pages/signal-analyzer'));
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
