@@ -1,4 +1,4 @@
-{
+ {
     "compilerOptions": {
         "target": "ES2020",
         "useDefineForClassFields": true,
@@ -17,9 +17,9 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "allowJs": true,
-        "baseUrl": "./src",
+        "ignoreDeprecations": "5.0",
         "paths": {
-            "@/*": ["./*"]
+            "@/*": ["./src/*"]
         },
         "esModuleInterop": true,
         "types": ["jest", "@testing-library/jest-dom"]
