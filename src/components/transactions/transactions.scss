@@ -1,5 +1,5 @@
 @use 'sass:string';
-@use 'components/shared/styles/mixins' as *;
+@use '@/components/shared/styles/mixins' as *;
 
 .transactions {
     $transaction: &;

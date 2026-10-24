@@ -1,5 +1,5 @@
-@use 'components/shared/styles/constants' as *;
-@use 'components/shared/styles/mixins' as *;
+@use '@/components/shared/styles/constants' as *;
+@use '@/components/shared/styles/mixins' as *;
 
 @mixin container-space($parent, $space) {
     #{$parent}__top-icon {

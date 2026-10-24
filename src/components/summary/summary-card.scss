@@ -1,4 +1,4 @@
-@use 'components/shared/styles/devices' as *;
+@use '@/components/shared/styles/devices' as *;
 
 .db-summary-card {
     $contract-card: &;

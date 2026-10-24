@@ -1,7 +1,7 @@
 /** @define data-list; weak */
 
-@use 'components/shared/styles/devices' as *;
-@use 'components/shared/styles/constants' as *;
+@use '@/components/shared/styles/devices' as *;
+@use '@/components/shared/styles/constants' as *;
 
 .data-list {
     position: relative;
