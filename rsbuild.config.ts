@@ -13,15 +13,15 @@ export default defineConfig({
         pluginSass({
             sassLoaderOptions: {
                 sourceMap: true,
-                // ⬇️ THE MAGIC FIX IS HERE ⬇️
                 sassOptions: {
+                    // This tells Sass to look inside these folders for imports
                     includePaths: [
                         path.resolve(__dirname, './src'),
                         path.resolve(__dirname, './src/components'),
                         path.resolve(__dirname, './src/styles'),
                     ],
                 },
-            },
+            } as any, // ⬅️ This `as any` tells TypeScript to ignore the strict type check here
             exclude: /node_modules/,
         }),
         pluginReact(),
@@ -44,12 +44,16 @@ export default defineConfig({
         alias: {
             react: path.resolve('./node_modules/react'),
             'react-dom': path.resolve('./node_modules/react-dom'),
+            
+            // Existing @/ aliases
             '@/external': path.resolve(__dirname, './src/external'),
             '@/components': path.resolve(__dirname, './src/components'),
             '@/hooks': path.resolve(__dirname, './src/hooks'),
             '@/utils': path.resolve(__dirname, './src/utils'),
             '@/constants': path.resolve(__dirname, './src/constants'),
             '@/stores': path.resolve(__dirname, './src/stores'),
+
+            // ⬇️ NEW ALIASES TO FIX VERCEL SCSS ERRORS ⬇️
             'components': path.resolve(__dirname, './src/components'),
             'external': path.resolve(__dirname, './src/external'),
             'hooks': path.resolve(__dirname, './src/hooks'),
