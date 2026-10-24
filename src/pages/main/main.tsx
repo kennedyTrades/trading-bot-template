@@ -1,4 +1,4 @@
- import React, { lazy, Suspense, useEffect, useState } from 'react';
+  import React, { lazy, Suspense, useEffect, useState } from 'react';
 import classNames from 'classnames';
 import { observer } from 'mobx-react-lite';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -46,9 +46,9 @@ import RunStrategy from '../dashboard/run-strategy';
 import './main.scss';
 
 const ChartWrapper = lazy(() => import('../chart/chart-wrapper'));
+ 
 const Analyzer = lazy(() => import('../analyzer'));
 const BulkTrader = lazy(() => import('../bulk-trader'));
-const SignalAnalyzer = lazy(() => import('@/pages/signal-analyzer'));
 
 const AppWrapper = observer(() => {
     const { connectionStatus } = useApiBase();
@@ -88,7 +88,7 @@ const AppWrapper = observer(() => {
     const { clear } = summary_card;
     const { DASHBOARD, BOT_BUILDER } = DBOT_TABS;
     const init_render = React.useRef(true);
-    const hash = ['dashboard', 'bot_builder', 'bulk_trader', 'freebots', 'dtrader', 'hedging', 'more', 'chart', 'analyzer', 'signal_analyzer'];
+    const hash = ['dashboard', 'bot_builder', 'bulk_trader', 'freebots', 'dtrader', 'hedging', 'more', 'chart', 'analyzer'];
     const { isDesktop } = useDevice();
     const location = useLocation();
     const navigate = useNavigate();
@@ -528,27 +528,6 @@ const AppWrapper = observer(() => {
                                     <Analyzer />
                                 </Suspense>
                             </div>
-                            <div
-                                label={
-                                    <>
-                                        <LabelPairedMagnifyingGlassPlusCaptionRegularIcon
-                                            height='24px'
-                                            width='24px'
-                                            fill='var(--text-general)'
-                                        />
-                                        <Localize i18n_default_text='Signal analyzer' />
-                                    </>
-                                }
-                                id='id-signal-analyzer'
-                            >
-                                <Suspense
-                                    fallback={
-                                        <ChunkLoader message={localize('Please wait, loading signal analyzer...')} />
-                                    }
-                                >
-                                    <SignalAnalyzer />
-                                </Suspense>
-                            </div>
                         </Tabs>
                         {!isDesktop && right_tab_shadow && <span className='tabs-shadow tabs-shadow--right' />}
                     </div>
@@ -600,4 +579,4 @@ const AppWrapper = observer(() => {
     );
 });
 
-export default AppWrapper;
+export default AppWrapper; 
