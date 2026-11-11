@@ -2,8 +2,8 @@
     "brand_name": "Optimus Trades",
     "brand_domain": "kennedy-trading-bot.netlify.app",
     "brand_hostname": {
-        "staging": "kennedy-trading-bot.netlify.app/dashboard",
-        "production": "kennedy-trading-bot.netlify.app/dashboard"
+        "staging": "kennedy-trading-bot.netlify.app",
+        "production": "kennedy-trading-bot.netlify.app"
     },
     "domain_name": "OptimusTrades",
     "colors": {
