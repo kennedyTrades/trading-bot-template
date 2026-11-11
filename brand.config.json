@@ -6,8 +6,8 @@
         "production": "kennedy-trading-bot.netlify.app"
     },
     "domain_name": "OptimusTrades",
-    "colors": {
-        "primary": "#26d99a",
+     "colors": {
+        "primary": "#C8102E",
         "secondary": "#64748b",
         "tertiary": "#8b5cf6",
         "success": "#10b981",
@@ -61,7 +61,7 @@
         "name": "Optimus Trades Bot",
         "logo": {
             "type": "component",
-            "component_name": "BrandLogo",
+            "component_name": "Kennedy Trades",
             "alt_text": "Optimus Trades",
             "link_url": "/",
             "show_text": false,
