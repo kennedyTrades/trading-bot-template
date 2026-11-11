@@ -1,9 +1,9 @@
  {
     "brand_name": "Optimus Trades",
-    "brand_domain": "trading-bot-template-six.vercel.app",
+    "brand_domain": "kennedy-trading-bot.netlify.app",
     "brand_hostname": {
-        "staging": "staging-bot.yourbrand.com/dashboard",
-        "production": "trading-bot-template-six.vercel.app/dashboard"
+        "staging": "kennedy-trading-bot.netlify.app/dashboard",
+        "production": "kennedy-trading-bot.netlify.app/dashboard"
     },
     "domain_name": "OptimusTrades",
     "colors": {
@@ -73,10 +73,10 @@
         },
         "hostname": {
             "production": {
-                "com": "trading-bot-template-six.vercel.app"
+                "com": "kennedy-trading-bot.netlify.app"
             },
             "staging": {
-                "com": "staging-bot.yourbrand.com"
+                "com": "kennedy-trading-bot.netlify.app"
             }
         },
         "auth2_url": {
