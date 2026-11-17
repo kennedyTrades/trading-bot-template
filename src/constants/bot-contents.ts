@@ -14,13 +14,15 @@ export const tabs_title: TTabsTitle = Object.freeze({
 export const DBOT_TABS: TDashboardTabIndex = Object.freeze({
     DASHBOARD: 0,
     BOT_BUILDER: 1,
-    BULK_TRADER: 2,
-    FREEBOTS: 3,
-    DTRADER: 4,
-    HEDGING: 5,
-    MORE: 6,
-    CHART: 7,
-    ANALYZER: 8,
+    OPTIMUS_PRIME: 2,
+    RISK_CALCULATOR: 3,
+    BULK_TRADER: 4,
+    FREEBOTS: 5,
+    DTRADER: 6,
+    HEDGING: 7,
+    MORE: 8,
+    CHART: 9,
+    ANALYZER: 10,
 });
 
 export const MAX_STRATEGIES = 10;
@@ -28,6 +30,8 @@ export const MAX_STRATEGIES = 10;
 export const TAB_IDS = [
     { id: 'id-dashboard', title: 'Dashboard', icon: 'ic-dashboard' },
     { id: 'id-bot-builder', title: 'Bot Builder', icon: 'ic-bot-builder' },
+    { id: 'id-optimus-prime', title: 'Optimus Prime', icon: 'ic-optimus-prime' },
+    { id: 'id-risk-calculator', title: 'Risk Calculator', icon: 'ic-risk-calculator' },
     { id: 'id-bulk-trader', title: 'Bulk Trader', icon: 'ic-bulk-trader' },
     { id: 'id-freebots', title: 'Freebots & strategies', icon: 'ic-star' },
     { id: 'id-dtrader', title: 'Dtrader/circles', icon: 'ic-circle' },
