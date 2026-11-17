@@ -385,34 +385,36 @@ const AppWrapper = observer(() => {
                                 id='id-bot-builder'
                             />
                             <div
-    label={
-        <>
-            <LabelPairedPuzzlePieceTwoCaptionBoldIcon
-                height='24px'
-                width='24px'
-                fill='var(--text-general)'
-            />
+     label={
+    <>
+        <LabelPairedPuzzlePieceTwoCaptionBoldIcon
+            height='24px'
+            width='24px'
+            fill='var(--text-general)'
+        />
+        <span style={{ color: '#38bdf8' }}>
             <Localize i18n_default_text='Optimus Prime' />
-        </>
-    }
+        </span>
+    </>
+}
     id='id-optimus-prime'
 >
     <OptimusPrime />
 </div>
                             
                             <div
-    label={
-        <>
-            <LabelPairedObjectsColumnCaptionRegularIcon
-                height='24px'
-                width='24px'
-                fill='var(--text-general)'
-            />
-            <Localize i18n_default_text='Risk Calculator' />
-        </>
-    }
-    id='id-risk-calculator'
->
+                                label={
+                                    <>
+                                        <LabelPairedObjectsColumnCaptionRegularIcon
+                                            height='24px'
+                                            width='24px'
+                                            fill='var(--text-general)'
+                                        />
+                                        <Localize i18n_default_text='Risk Calculator' />
+                                        </>
+                                }
+                                id='id-risk-calculator'
+                             >
     <RiskCalculator />
 </div>
                             <div
