@@ -1,4 +1,4 @@
-<!doctype html>
+ <!doctype html>
 <html lang="en" dir="auto" class="light">
     <head>
         <!-- Google Tag Manager -->
@@ -34,6 +34,32 @@
             :root {
                 font-size: 62.5%;
             }
+            /* Custom Splash Screen Styling */
+            #custom-splash {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100vh;
+                width: 100vw;
+                background-color: #ffffff;
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 99999;
+                font-family: sans-serif;
+            }
+            #custom-splash img {
+                width: 100px;
+                height: 100px;
+                margin-bottom: 16px;
+                animation: pulse 1.5s infinite ease-in-out;
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); opacity: 0.8; }
+                50% { transform: scale(1.08); opacity: 1; }
+                100% { transform: scale(1); opacity: 0.8; }
+            }
         </style>
     </head>
 
@@ -51,7 +77,15 @@
 
         <div id="modal_root" class="modal-root"></div>
         <div id="popup_root" class="popup-root"></div>
-        <div id="root"></div>
+        
+        <!-- Custom Splash Screen View (Replaced automatically when React loads) -->
+        <div id="root">
+            <div id="custom-splash">
+                <img src="/splash-logo.png" alt="Loading Logo" />
+                <p style="color: #333333; font-size: 1.4rem; font-weight: 500;">Loading Optimus Prime Bot...</p>
+            </div>
+        </div>
+
         <!-- LiveChat script -->
         <script type="text/javascript" defer>
             window.__lc = window.__lc || {};
